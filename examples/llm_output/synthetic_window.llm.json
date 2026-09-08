@@ -1,0 +1,23 @@
+{
+  "backend": "synthetic-example",
+  "raw_response_text": "{\"actor_matrix\":[{\"actor_id\":\"ACTOR1\",\"risk_score\":0.86,\"reasoning\":\"Vehicle ahead is close, aligned, and closing.\"},{\"actor_id\":\"ACTOR2\",\"risk_score\":0.08,\"reasoning\":\"Pedestrian remains outside the ego path.\"}],\"primary_responsible_actor\":\"ACTOR1\",\"scenario_classification\":\"lead_brake\",\"confidence_score\":0.84,\"final_rationale\":\"The aligned lead vehicle is the strongest explanation for the braking event.\",\"ego_window_key\":\"synthetic-log-001|1000.000000|1001.800000\"}",
+  "parsed_result": {
+    "actor_matrix": [
+      {
+        "actor_id": "ACTOR1",
+        "risk_score": 0.86,
+        "reasoning": "Vehicle ahead is close, aligned, and closing."
+      },
+      {
+        "actor_id": "ACTOR2",
+        "risk_score": 0.08,
+        "reasoning": "Pedestrian remains outside the ego path."
+      }
+    ],
+    "primary_responsible_actor": "ACTOR1",
+    "scenario_classification": "lead_brake",
+    "confidence_score": 0.84,
+    "final_rationale": "The aligned lead vehicle is the strongest explanation for the braking event.",
+    "ego_window_key": "synthetic-log-001|1000.000000|1001.800000"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/signals-to-semantics/llm_output.schema.json",
+  "title": "Signals to Semantics LLM output",
+  "type": "object",
+  "required": ["backend", "raw_response_text", "parsed_result"],
+  "properties": {
+    "backend": {
+      "type": "string",
+      "minLength": 1
+    },
+    "raw_response_text": {
+      "type": "string"
+    },
+    "parsed_result": {
+      "type": "object",
+      "required": [
+        "actor_matrix",
+        "primary_responsible_actor",
+        "scenario_classification",
+        "confidence_score",
+        "final_rationale",
+        "ego_window_key"
+      ],
+      "properties": {
+        "actor_matrix": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["actor_id", "risk_score", "reasoning"],
+            "properties": {
+              "actor_id": {
+                "type": "string",
+                "enum": ["ACTOR1", "ACTOR2", "ACTOR3"]
+              },
+              "risk_score": {
+                "type": "number"
+              },
+              "reasoning": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "primary_responsible_actor": {
+          "type": ["string", "null"],
+          "enum": ["ACTOR1", "ACTOR2", "ACTOR3", null]
+        },
+        "scenario_classification": {
+          "type": "string",
+          "enum": [
+            "cut_in",
+            "ped_crossing",
+            "obj_crossing",
+            "lead_brake",
+            "approach_stop",
+            "left_oppo",
+            "right_ped",
+            "other"
+          ]
+        },
+        "confidence_score": {
+          "type": "number"
+        },
+        "final_rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ego_window_key": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

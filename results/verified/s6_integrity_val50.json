@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "split": "val50",
+  "evidence_files_expected": 56,
+  "evidence_files_present": 56,
+  "llm_predictions": 671,
+  "invalid_llm_json_files": 0,
+  "orphan_window_references": 0,
+  "non_null_primary_actor_references": 530,
+  "mapped_primary_actor_references": 530,
+  "scenario_actor_feature_rows": 1326,
+  "s2_embedding_rows": 782,
+  "gat_inference_rows": 168,
+  "ground_truth_rows": 26,
+  "evaluated_backend_configurations": 12,
+  "interpretation": "Integrity counts verify traceability and key consistency, not semantic correctness."
+}

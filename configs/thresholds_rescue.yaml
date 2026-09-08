@@ -1,0 +1,9 @@
+brake:
+  a_min: -0.9818563009980742      # global p15 acceleration
+  j_min: -4.759393574637533     # global p15 jerk
+  min_dur_s: 0.25
+  max_gap_s: 0.25
+  smooth_window: 9
+  smooth_poly: 2
+  mode: "OR"
+  min_delta_v: 0.6   # softer Δv to catch gentle brakes

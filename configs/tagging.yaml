@@ -1,0 +1,38 @@
+# Thesis configuration used for geometric actor preselection.
+# Recalibrate these values before transferring the pipeline to another dataset.
+horizon_s: 4.0
+step_s: 0.2
+top_k: 24
+
+ego_length_m: 4.8
+ego_width_m: 2.0
+
+use_obd: true
+rollout_model: "hybrid"
+accel_weight_a0: 0.8
+softmin_tau_m: 0.3
+sigma_m: 1.5
+
+sustained_margin_m: 0.60
+sustained_len: 2
+unsustained_decay: 0.6
+
+front_sector_deg: 70.0
+min_static_keep_dist_m: 40.0
+static_keep_if_poverlap_ge: 0.05
+
+filters:
+  include_categories:
+    [REGULAR_VEHICLE, LARGE_VEHICLE, BUS, BOX_TRUCK, TRUCK, TRAILER,
+     MOTORCYCLE, BICYCLE, PEDESTRIAN, STOP_SIGN, TRAFFIC_SIGN, SIGN,
+     BOLLARD, CONE, BARRIER, POLE]
+  min_track_len_s: 0.5
+  max_init_dist_m: 200.0   # RAISED to ensure far-ahead culprits are considered
+
+features_out:
+  include:
+    [p_overlap, dmin_m, penetration_m, t_at_dmin_s, sustained_tight,
+     a_norm, length_m, width_m, category, is_static, on_path_like,
+     bearing_rad, rel_speed_closing_mps, sector_id]
+
+return_all: true

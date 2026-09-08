@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "split": "val50",
+  "s1_event_discovery": {
+    "predicted_windows": 56,
+    "distinct_gt_aligned_predicted_windows": 26,
+    "unmatched_predicted_windows": 30,
+    "candidate_discoveries": 30,
+    "gt_event_recall": 1.0,
+    "candidate_discovery_definition": "A predicted window without an overlap in the available ground-truth event set; separate review is required."
+  },
+  "s3_actor_ranking": {
+    "annotated_evaluation_instances": 28,
+    "distinct_predicted_windows": 26,
+    "hit_at_1": 0.892857,
+    "recall_at_3": 1.0,
+    "average_rank": 1.178571,
+    "mean_reciprocal_rank": 0.934524,
+    "pairwise_accuracy": 0.910714
+  },
+  "notes": [
+    "Annotated-instance and distinct-window counts are reported separately.",
+    "These results do not establish formal causal responsibility."
+  ]
+}

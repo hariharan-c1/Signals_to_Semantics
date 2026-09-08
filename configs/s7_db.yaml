@@ -1,0 +1,22 @@
+db:
+  env_file: configs/db.env
+
+s7b:
+  split_name: val50
+  results_root: artifacts/train650_val50/val50
+  embeddings_table: scenario_embeddings_gemma
+  embedding_model: embeddinggemma:latest
+  embed_dim: 768
+  ollama_url: http://127.0.0.1:11434
+  timeout_s: 120
+  top_k: 10
+  method: ann
+  store_to_db: true
+  enable_rerank: true
+  rerank_alpha_sim: 1.0
+  rerank_beta_llm_conf: 0.10
+  rerank_gamma_s1: 0.10
+  backend_id: null
+  prompt_type: null
+  backend_dir: null
+  backend_scope_all: false

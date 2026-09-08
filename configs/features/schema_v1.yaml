@@ -1,0 +1,312 @@
+version: 1
+name: per_window_actor_features
+description: |
+  Per braking-window × actor feature table (ego-relative kinematics + map cues + rankings).
+  One row per (log_id, window_center, track_uuid). Used for PU/MIL verifiers and GNN (GAT) inputs.
+
+keys:
+  - log_id
+  - window_center
+  - track_uuid
+
+defaults:
+  # How downstream should handle nulls if not overridden per-column
+  fillna_strategy: none   # options: none|zero|median|mode|constant
+  constant_value: null
+
+enums:
+  category:
+    values: [REGULAR_VEHICLE, LARGE_VEHICLE, BUS, BOX_TRUCK, TRUCK, TRAILER,
+             PEDESTRIAN, BICYCLE, MOTORCYCLE,
+             STOP_SIGN, TRAFFIC_SIGN, SIGN, BOLLARD, CONE, BARRIER, POLE, UNKNOWN_STATIC]
+  sector_id:
+    values: [0, 1, 2, 3]   # 0=front, 1=left, 2=rear, 3=right
+
+columns:
+  # ---------- identifiers ----------
+  - name: log_id
+    dtype: string
+    role: id
+    description: Argoverse 2 sensor log UUID
+    nullable: false
+
+  - name: window_t_start
+    dtype: float64
+    role: timestamp
+    unit: seconds
+    nullable: false
+
+  - name: window_t_end
+    dtype: float64
+    role: timestamp
+    unit: seconds
+    nullable: false
+
+  - name: window_center
+    dtype: float64
+    role: timestamp
+    unit: seconds
+    nullable: false
+
+  - name: track_uuid
+    dtype: string
+    role: id
+    description: Actor track UUID
+    nullable: false
+
+  - name: category
+    dtype: string
+    role: categorical
+    enum: category
+    nullable: false
+
+  # ---------- tags / flags ----------
+  - name: is_vehicle
+    dtype: int8
+    role: binary
+    description: 1 if vehicle class (incl. trucks/bus), else 0
+    nullable: false
+
+  - name: is_vru
+    dtype: int8
+    role: binary
+    description: 1 if VRU (ped/bike/motorcycle), else 0
+    nullable: false
+
+  - name: is_static
+    dtype: int8
+    role: binary
+    description: 1 if static class, else 0
+    nullable: false
+
+  - name: sector_id
+    dtype: int8
+    role: categorical
+    enum: sector_id
+    description: Bearing sector at window center (0=front,1=left,2=rear,3=right)
+    nullable: false
+
+  - name: on_path_like
+    dtype: int8
+    role: binary
+    description: Heuristic on-path flag at window center
+    nullable: false
+
+  # ---------- ego-relative kinematics / geometry ----------
+  - name: x_rel_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Actor x (forward) in ego frame at window center
+    nullable: false
+
+  - name: y_rel_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Actor y (left) in ego frame at window center
+    nullable: false
+
+  - name: r_rel_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Euclidean distance sqrt(x^2+y^2)
+    nullable: false
+
+  - name: dmin_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Soft-min distance over horizon (>=0)
+    nullable: false
+
+  - name: p_overlap
+    dtype: float32
+    role: numeric
+    range: [0.0, 1.0]
+    description: Overlap probability proxy (soft)
+    nullable: false
+
+  - name: t_at_dmin_s
+    dtype: float32
+    role: numeric
+    unit: seconds
+    description: Time offset of dmin relative to window center ([-2, 2] in current setup)
+    nullable: false
+
+  - name: sustained_tight
+    dtype: float32
+    role: numeric
+    description: 1.0 if tight distance sustained over horizon; else 0.0
+    nullable: false
+
+  - name: rel_speed_closing_mps
+    dtype: float32
+    role: numeric
+    unit: m/s
+    description: Radial closing speed (+ closing, − diverging)
+    nullable: false
+
+  - name: lat_speed_mps
+    dtype: float32
+    role: numeric
+    unit: m/s
+    description: |
+      Lateral speed magnitude (|v_y| in ego frame); used for cut-in / crossing cues
+    nullable: false
+
+  - name: a_norm
+    dtype: float32
+    role: numeric
+    unit: m/s^2
+    description: Actor acceleration magnitude near window center
+    nullable: false
+
+  - name: length_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Actor length (box)
+    nullable: false
+
+  - name: width_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Actor width (box)
+    nullable: false
+
+  - name: bearing_rad
+    dtype: float32
+    role: numeric
+    unit: radians
+    range: [-3.1416, 3.1416]
+    description: atan2(y_rel, x_rel) at window center
+    nullable: false
+
+  - name: ttc_s
+    dtype: float32
+    role: numeric
+    unit: seconds
+    description: Time-to-collision proxy; large clipped at +inf
+    nullable: false
+
+  # ---------- proximity “buckets” ----------
+  - name: dist_lt3
+    dtype: float32
+    role: numeric
+    description: 1.0 if r_rel_m < 3; else 0.0
+    nullable: false
+
+  - name: dist_lt5
+    dtype: float32
+    role: numeric
+    description: 1.0 if r_rel_m < 5; else 0.0
+    nullable: false
+
+  - name: dist_lt8
+    dtype: float32
+    role: numeric
+    description: 1.0 if r_rel_m < 8; else 0.0
+    nullable: false
+
+  # ---------- motion pattern hints ----------
+  - name: approach_like
+    dtype: float32
+    role: numeric
+    description: Heuristic approach flag in horizon (0/1)
+    nullable: false
+
+  - name: crossing_like
+    dtype: float32
+    role: numeric
+    description: Heuristic lateral-crossing flag in horizon (0/1)
+    nullable: false
+
+  - name: heading_align_cos
+    dtype: float32
+    role: numeric
+    range: [-1.0, 1.0]
+    description: Cosine alignment between actor velocity and ego forward
+    nullable: false
+
+  - name: long_gap_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Equals x_rel_m (exposed for readability / ablations)
+    nullable: false
+
+  - name: lat_offset_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Equals y_rel_m (exposed for readability / ablations)
+    nullable: false
+
+  # ---------- map cues ----------
+  - name: map_lane_offset_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Lateral offset to nearest lane centerline at window center
+    nullable: false
+    fillna_strategy: median   # should be almost never NaN
+
+  - name: map_lane_alignment_cos
+    dtype: float32
+    role: numeric
+    range: [-1.0, 1.0]
+    description: Cosine between actor heading and nearest lane tangent
+    nullable: false
+    fillna_strategy: median
+
+  - name: dist_to_stopline_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Distance from ego to nearest upstream stopline proxy (per window center)
+    nullable: true
+    fillna_strategy: constant
+    constant_value: 300.0   # far-away sentinel
+
+  - name: dist_to_crosswalk_m
+    dtype: float32
+    role: numeric
+    unit: meters
+    description: Distance from ego to nearest crosswalk polygon (per window center)
+    nullable: true
+    fillna_strategy: constant
+    constant_value: 300.0   # far-away sentinel
+
+  - name: in_drivable_area
+    dtype: int8
+    role: binary
+    description: 1 if (x_rel, y_rel) lies within a drivable polygon; else 0
+    nullable: false
+
+  # ---------- rankings within window ----------
+  - name: rank_p_overlap
+    dtype: int8
+    role: rank
+    description: 1..24 rank by p_overlap (1 = highest)
+    nullable: false
+
+  - name: margin_to_top_p
+    dtype: float32
+    role: numeric
+    description: p_top − p_current within window (top row has 0)
+    nullable: false
+
+  - name: rank_inv_dmin
+    dtype: int8
+    role: rank
+    description: 1..24 rank by (1/(1+dmin)) (1 = nearest by soft distance)
+    nullable: false
+
+  - name: margin_to_top_inv_d
+    dtype: float32
+    role: numeric
+    description: inv_d_top − inv_d_current within window
+    nullable: false

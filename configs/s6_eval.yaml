@@ -1,0 +1,34 @@
+db:
+  env_file: configs/db.env
+
+eval:
+  split_name: val50
+  backend_ids: []
+  canonical_labels:
+    - approach_stop
+    - cut_in
+    - lead_brake
+    - obj_crossing
+    - ped_crossing
+  label_aliases:
+    right_ped: ped_crossing
+    traffic_sign: approach_stop
+  discovery:
+    enabled: true
+    conf_threshold: 0.90
+    consensus_threshold: 0.75
+    exclude_labels: [other]
+  confidence:
+    bins: [0.0, 0.5, 0.7, 0.8, 0.9, 1.01]
+    high_conf_thresholds: [0.7, 0.8, 0.9]
+  calibration:
+    n_bins: 10
+  human_validation:
+    enabled: false
+    input_dir: artifacts/train650_val50/val50/human_validation
+    glob: '*.jsonl'
+
+outputs:
+  out_dir: artifacts/train650_val50/val50/s6/evaluation
+  make_plots: true
+  plot_dpi: 300

@@ -1,0 +1,8 @@
+name: train650_val50_random1337
+av2_sensor_root: /absolute/path/to/argoverse2/sensor/train
+seed: 1337
+splits:
+  development: configs/splits/dev100.txt
+  training: configs/splits/train650.txt
+  validation: configs/splits/val50.txt
+artifacts_root: artifacts/train650_val50

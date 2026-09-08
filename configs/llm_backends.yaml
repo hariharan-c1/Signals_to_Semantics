@@ -1,0 +1,23 @@
+default_backend: ollama-local
+
+backends:
+  azure-gpt-5-mini:
+    provider: azure
+    nice_name: Azure OpenAI
+    endpoint: ${AZURE_OPENAI_ENDPOINT}
+    api_key: ${AZURE_OPENAI_API_KEY}
+    api_version: ${AZURE_OPENAI_API_VERSION}
+    model: ${AZURE_OPENAI_DEPLOYMENT}
+    default_params:
+      temperature: 0.0
+      top_p: 1.0
+      max_output_tokens: 8000
+
+  ollama-local:
+    provider: ollama
+    nice_name: Local model through Ollama
+    base_url: http://127.0.0.1:11434
+    model: gpt-oss:20b
+    default_params:
+      temperature: 0.0
+      top_p: 1.0

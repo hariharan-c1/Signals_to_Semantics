@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the thesis and this repository."
+title: "Signals to Semantics"
+abstract: "An LLM-driven learning pipeline for novel driving-scenario discovery."
+type: software
+authors:
+  - family-names: Chandrasekaran
+    given-names: Hariharan
+version: 0.1.0
+date-released: 2026-09-08
+license: MIT
+keywords:
+  - autonomous driving
+  - scenario discovery
+  - positive-unlabeled learning
+  - graph attention network
+  - large language model

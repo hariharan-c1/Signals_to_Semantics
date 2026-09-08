@@ -1,0 +1,164 @@
+{
+  "window_key": "synthetic-log-001|1000.000000|1001.800000",
+  "log_id": "synthetic-log-001",
+  "episode": {
+    "t_on": 1000.0,
+    "t_peak": 1000.9,
+    "t_off": 1001.8,
+    "peak_decel_mps2": 2.8,
+    "score_final": 0.91
+  },
+  "actors": [
+    {
+      "track_uuid": "synthetic-actor-a",
+      "rank_s3": 1,
+      "s3_score": 0.82,
+      "category": "REGULAR_VEHICLE",
+      "is_vehicle": 1,
+      "is_vru": 0,
+      "is_static": 0,
+      "x_rel_m": 11.5,
+      "y_rel_m": 0.4,
+      "dmin_m": 7.1,
+      "rel_speed_closing_mps": 3.2,
+      "ttc_s": 2.4,
+      "role_hint": "lead_vehicle",
+      "summary": "A vehicle ahead slows while remaining close to the ego path."
+    },
+    {
+      "track_uuid": "synthetic-actor-b",
+      "rank_s3": 2,
+      "s3_score": 0.13,
+      "category": "PEDESTRIAN",
+      "is_vehicle": 0,
+      "is_vru": 1,
+      "is_static": 0,
+      "x_rel_m": 18.0,
+      "y_rel_m": 7.5,
+      "dmin_m": 14.2,
+      "rel_speed_closing_mps": 0.2,
+      "ttc_s": 99.0,
+      "role_hint": "peripheral_vru",
+      "summary": "A pedestrian remains outside the ego path."
+    }
+  ],
+  "map": {
+    "road_type_hint": "urban",
+    "min_dist_to_crosswalk_m": 22.0,
+    "min_dist_to_stopline_m": 31.0
+  },
+  "media": {
+    "static_map_path": null,
+    "ego_actor1_clip": null,
+    "ego_actor2_clip": null,
+    "ego_actor3_clip": null
+  },
+  "hints": {
+    "near_crosswalk": false,
+    "near_stopline": false,
+    "has_close_actor": true,
+    "primary_side": "front"
+  },
+  "ground_truth": {
+    "label": null,
+    "scenario_label": null
+  },
+  "llm_input": {
+    "ego_window_key": "synthetic-log-001|1000.000000|1001.800000",
+    "ego_brake_episode": {
+      "t_start_s": 1000.0,
+      "t_peak_brake_s": 1000.9,
+      "t_end_s": 1001.8,
+      "brake_confidence_score": 0.91,
+      "peak_deceleration_mps2": 2.8
+    },
+    "context_brief": "The ego brakes for 1.8 seconds. A close vehicle is directly ahead, while a pedestrian remains outside the driving path.",
+    "actors": [
+      {
+        "actor_id": "ACTOR1",
+        "category": "REGULAR_VEHICLE",
+        "is_vehicle": 1,
+        "is_vulnerable_road_user": 0,
+        "is_static": 0,
+        "is_stationary_actor": 0,
+        "ego_forward_offset_m": 11.5,
+        "ego_lateral_offset_m": 0.4,
+        "lane_center_offset_m": 0.4,
+        "closest_distance_during_episode_m": 7.1,
+        "time_when_closest_s": 0.9,
+        "relative_closing_speed_mps": 3.2,
+        "relative_lateral_speed_mps": 0.1,
+        "relative_motion_norm_mps2": 1.4,
+        "time_to_collision_s": 2.4,
+        "ever_within_3m": false,
+        "distance_to_crosswalk_m": 22.0,
+        "distance_to_stopline_m": 31.0,
+        "in_drivable_area": 1,
+        "lane_alignment_cosine": 0.98,
+        "heading_alignment_cosine": 0.99,
+        "length_m": 4.5,
+        "width_m": 1.8,
+        "gat_rank": 1,
+        "gat_score": 0.82,
+        "on_ego_path": 1,
+        "heuristic_distance_bucket": "near",
+        "heuristic_side_bucket": "front",
+        "heuristic_ttc_bucket": "short",
+        "heuristic_trajectory_type": "longitudinal",
+        "heuristic_role_hint": "lead_vehicle",
+        "heuristic_is_close": true,
+        "heuristic_relative_heading_bucket": "aligned",
+        "heuristic_distance_trend_bucket": "closing",
+        "heuristic_cross_direction": "none"
+      },
+      {
+        "actor_id": "ACTOR2",
+        "category": "PEDESTRIAN",
+        "is_vehicle": 0,
+        "is_vulnerable_road_user": 1,
+        "is_static": 0,
+        "is_stationary_actor": 0,
+        "ego_forward_offset_m": 18.0,
+        "ego_lateral_offset_m": 7.5,
+        "lane_center_offset_m": 7.5,
+        "closest_distance_during_episode_m": 14.2,
+        "time_when_closest_s": 1.2,
+        "relative_closing_speed_mps": 0.2,
+        "relative_lateral_speed_mps": 0.4,
+        "relative_motion_norm_mps2": 0.1,
+        "time_to_collision_s": 99.0,
+        "ever_within_3m": false,
+        "distance_to_crosswalk_m": 6.0,
+        "distance_to_stopline_m": 20.0,
+        "in_drivable_area": 0,
+        "lane_alignment_cosine": 0.1,
+        "heading_alignment_cosine": 0.0,
+        "length_m": 0.5,
+        "width_m": 0.5,
+        "gat_rank": 2,
+        "gat_score": 0.13,
+        "on_ego_path": 0,
+        "heuristic_distance_bucket": "far",
+        "heuristic_side_bucket": "left",
+        "heuristic_ttc_bucket": "none",
+        "heuristic_trajectory_type": "peripheral",
+        "heuristic_role_hint": "peripheral_vru",
+        "heuristic_is_close": false,
+        "heuristic_relative_heading_bucket": "crossing",
+        "heuristic_distance_trend_bucket": "stable",
+        "heuristic_cross_direction": "none"
+      }
+    ],
+    "ego_map_summary": {
+      "road_type_hint": "urban",
+      "min_distance_to_crosswalk_m": 22.0,
+      "min_distance_to_stopline_m": 31.0
+    },
+    "scenario_hints": {
+      "ego_near_crosswalk": false,
+      "ego_near_stopline": false,
+      "has_close_actor": true,
+      "primary_interaction_side": "front"
+    }
+  }
+}

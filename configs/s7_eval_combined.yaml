@@ -1,0 +1,99 @@
+db:
+  env_file: "configs/db.env"
+  view_name: "v_scenario_trace"
+
+ollama:
+  base_url: "http://127.0.0.1:11434"
+  embedding_model: "embeddinggemma:latest"
+  embed_dim: 768
+  timeout_s: 120
+
+corpus:
+  # Combined corpus mapping strategy:
+  #  - "logical_best": same logical backend across splits (best for strict baseline comparability)
+  #  - "winner_per_split": best backend within each split (best for headline/demo/appendix)
+  strategy: "winner_per_split"
+
+  backend_map_default:
+    val50: 7
+    train650: 31
+
+  backend_map_winners:
+    val50: 7
+    train650: 31
+
+retrieval:
+  method: "exact"               # "ann" or "exact"
+  top_k_precision: 10         # P@10, R@10, F1@10
+  top_k_recall: 50            # R@50
+  oversample_factor: 10       # recommend >=10 when dedup != none
+
+  # "none" is best for window-level recall (baseline-style)
+  # use "log_id" only with log-level recall denominators (not implemented here)
+  dedup_mode: "none"          # "none" | "window_key" | "log_id"
+
+eval:
+  query_mode: "multi"         # "single" baseline-like; "multi" robust
+
+  gt_support_min: 2
+
+  out_dir: "artifacts/train650_val50/combined/s7/evaluation"
+
+  # Main run candidate pool:
+  #  - "open"   : includes GT-missing candidates (discovery setting, hurts GT precision)
+  #  - "gt_only": apples-to-apples baseline comparable
+  main_candidate_pool: "open"
+
+  # Second run: always GT-only candidate pool (baseline comparable)
+  run_gt_constrained: true
+
+  # Output prefixes
+  output_prefix_main: "s7c_query_eval_main"
+  output_prefix_gt: "s7c_query_eval_gt_only"
+
+umap:
+  enabled: true
+  corpus_for_umap: "winners_per_split"   # best looking: val50 winner + train650 winner
+
+  sample_n: 0
+  n_neighbors: 35
+  min_dist: 0.10
+  metric: "cosine"
+  random_state: 42
+
+queries:
+  cut_in:
+    - "braking due to a vehicle cutting in from the right or left into ego’s lane"
+    - "Ego vehicle brakes because another car suddenly merges into its lane at close distance."
+    - "Sudden lateral lane intrusion by a nearby vehicle causing ego to brake abruptly."
+    - "Ego braking triggered by a car moving laterally into ego’s lane ahead, short headway."
+
+  lead_brake:
+    - "Ego brakes because the vehicle directly ahead decelerates strongly (lead vehicle braking)."
+    - "Following a lead car, ego slows down due to lead vehicle braking or traffic compression."
+    - "Front vehicle reduces speed quickly; ego brakes to maintain safe time gap."
+    - "The lead vehicle suddenly brakes, requiring the ego vehicle to brake in order to avoid a collision."
+
+  approach_stop:
+    - "Ego slows and brakes while approaching a stop line at an intersection, preparing to stop."
+    - "Gradual braking approaching a stop line or traffic light, anticipatory deceleration."
+    - "Ego braking due to a vehicle ahead waiting at a stop line or crosswalk."
+    - "The ego vehicle approaches a stopped or slow-moving vehicle ahead, requiring careful deceleration to maintain a safe distance."
+
+  obj_crossing:
+    - "Ego brakes because an object or vehicle crosses its path laterally in front."
+    - "Cross-traffic or obstacle enters ego trajectory; ego brakes to avoid collision."
+    - "Ego decelerates due to an object crossing from left or right across ego lane."
+    - "Ego brakes due to a vehicle crossing the ego's path from right or left."
+
+  ped_crossing:
+    - "Pedestrian enters roadway in front of ego; ego slows or stops to yield."
+    - "Crossing pedestrian ahead causes ego to brake near a crosswalk or crossing area."
+    - "Ego braking due to a pedestrian walking across the driving path at close distance."
+    - "A pedestrian crosses in front of the ego vehicle, requiring the ego vehicle to brake or yield to avoid a collision."
+
+  left_oppo:
+    - "Ego brakes due to oncoming traffic or an opposing-direction vehicle creating risk ahead."
+    - "Ego slows because of a vehicle approaching from the opposite direction near a narrow road segment."
+    - "Interaction with opposing traffic: ego brakes to yield or avoid conflict with an oncoming vehicle."
+    - "Ego braking caused by an oncoming vehicle conflict (opposite direction), requiring caution or yielding."

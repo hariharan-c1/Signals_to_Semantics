@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/signals-to-semantics/evidence.schema.json",
+  "title": "Signals to Semantics evidence packet",
+  "type": "object",
+  "required": [
+    "window_key",
+    "log_id",
+    "episode",
+    "actors",
+    "map",
+    "hints",
+    "llm_input"
+  ],
+  "properties": {
+    "window_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "log_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "episode": {
+      "type": "object",
+      "required": ["t_on", "t_peak", "t_off", "peak_decel_mps2", "score_final"],
+      "properties": {
+        "t_on": {"type": "number"},
+        "t_peak": {"type": "number"},
+        "t_off": {"type": "number"},
+        "peak_decel_mps2": {"type": "number", "minimum": 0},
+        "score_final": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": true
+    },
+    "actors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["track_uuid", "rank_s3", "s3_score", "category"],
+        "properties": {
+          "track_uuid": {"type": "string"},
+          "rank_s3": {"type": "integer", "minimum": 1},
+          "s3_score": {"type": "number"},
+          "category": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "map": {
+      "type": "object"
+    },
+    "hints": {
+      "type": "object"
+    },
+    "ground_truth": {
+      "type": ["object", "null"]
+    },
+    "llm_input": {
+      "type": "object",
+      "required": [
+        "ego_window_key",
+        "ego_brake_episode",
+        "context_brief",
+        "actors",
+        "ego_map_summary",
+        "scenario_hints"
+      ],
+      "properties": {
+        "ego_window_key": {"type": "string", "minLength": 1},
+        "ego_brake_episode": {"type": "object"},
+        "context_brief": {"type": "string"},
+        "actors": {"type": "array"},
+        "ego_map_summary": {"type": "object"},
+        "scenario_hints": {"type": "object"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

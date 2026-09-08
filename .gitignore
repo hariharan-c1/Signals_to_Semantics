@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+configs/db.env
+configs/paths.yaml
+
+# Datasets and generated artifacts
+data/
+artifacts/
+outputs/
+logs/
+checkpoints/
+models/
+*.parquet
+*.feather
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.pickle
+*.joblib
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

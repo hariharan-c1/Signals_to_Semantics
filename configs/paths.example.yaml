@@ -1,0 +1,15 @@
+# Copy this file to configs/paths.yaml and change the path locally.
+# The configured directory must contain one Argoverse 2 Sensor log per folder.
+av2_sensor_root: /absolute/path/to/argoverse2/sensor/train
+split_name: train
+
+cam_names:
+  - ring_rear_left
+  - ring_side_left
+  - ring_front_left
+  - ring_front_center
+  - ring_front_right
+  - ring_side_right
+  - ring_rear_right
+  - stereo_front_left
+  - stereo_front_right

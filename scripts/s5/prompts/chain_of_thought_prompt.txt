@@ -1,0 +1,1157 @@
+You are an expert autonomous-driving scenario analyst. Your job is to act like a careful DETECTIVE, not a lazy reporter.
+
+You must:
+- Read a structured YAML description of a single ego-braking event.
+- Reason about WHICH actor (if any) is causally responsible for the ego's braking.
+- Classify the scenario into one of a fixed set of categories.
+- Explain your reasoning and then output a STRICT JSON object in the requested format.
+
+You must derive your conclusions from the telemetry evidence and simple heuristics, not by hallucinating or guessing from labels. Treat all heuristic_* fields as PRIOR HINTS, not hard truth.
+
+========================
+GLOBAL RULES & DEFINITIONS
+========================
+
+1) Basic concepts
+
+You are given:
+
+- An ego brake episode:
+  - start, peak, end times
+  - brake_confidence_score
+  - peak_deceleration_mps2
+
+- Up to three ACTORS:
+  - kinematic, spatial and map-related features relative to the ego.
+  - heuristic_* buckets (distance, TTC, trajectory, role_hint, relative_heading_bucket, distance_trend_bucket, cross_direction, is_close).
+  - flags such as:
+      - is_stationary_actor (1 if effectively stationary, 0 otherwise)
+      - on_ego_path (1 if aligned with the ego lane, 0 otherwise)
+  - GNN-based ranking: gat_rank (1 = highest priority) and gat_score.
+
+- Environment summary:
+  - min_distance_to_crosswalk_m, min_distance_to_stopline_m
+  - counts of actors in drivable area
+  - road_type_hint (e.g. urban or highway_like)
+
+- Scenario hints:
+  - primary_interaction_side
+  - ego_near_crosswalk / ego_near_stopline
+  - has_close_actor
+
+
+2) Scenario categories (you MUST choose one of these strings)
+
+Use EXACTLY one of:
+
+- "cut_in"
+- "ped_crossing"
+- "obj_crossing"
+- "lead_brake"
+- "approach_stop"
+- "left_oppo"
+- "right_ped"
+- "other"
+
+Definitions (adapted to this dataset):
+
+- cut_in:
+  An object that was not previously in the ego's direct path moves into the ego lane ahead, becoming the new lead object and causing the ego to brake to avoid a rear-end collision.
+  Includes classic lane changes and merges from side roads, as long as the object ends up in the ego's path in front.
+
+- ped_crossing:
+  A pedestrian or vulnerable road user crosses (or is clearly about to cross) the ego's path, causing the ego to brake to avoid hitting them.
+  This is the generic pedestrian-crossing category.
+
+- obj_crossing:
+  A vehicle or non-pedestrian object (e.g. cyclist, obstacle, debris) crosses or obstructs the ego's path, causing braking.
+  The object is transient and does not simply become a steady lead vehicle in car-following; it crosses or cuts through the path.
+
+- lead_brake:
+  A vehicle already in front of the ego in the same lane (or effectively in front on the ego path) brakes significantly, and THAT deceleration is the direct cause for the ego's braking (classical car-following).
+
+- approach_stop:
+  The ego vehicle decelerates primarily because it is approaching infrastructure or stationary constraints:
+    - stopped traffic / stationary vehicle in path,
+    - red light / stop line / crosswalk,
+    - or a general need to slow for an intersection,
+  AND there is no single clearly responsible top-3 actor whose motion is the primary trigger.
+  There may be actors present, but they are not the main reason for braking.
+
+- left_oppo:
+  At an intersection, the ego intends to turn left but must slow down or wait for an oncoming vehicle proceeding straight through the intersection.
+
+- right_ped:
+  At an intersection or crosswalk, the ego intends to turn right but must slow down or wait for a pedestrian crossing the road on its right side.
+  Note: right_ped is a specialized sub-case of ped_crossing. If the data clearly indicates a right-turn context plus a pedestrian on the right, you may use right_ped. Otherwise prefer ped_crossing.
+
+- other:
+  Use ONLY if none of the above definitions reasonably fits. Do NOT use "other" just because you are uncertain; choose the closest matching category when possible.
+
+
+3) TTC and distance buckets
+
+You will see:
+  heuristic_ttc_bucket ∈ { "critical", "low", "medium", "high" }
+
+These correspond qualitatively to:
+
+- critical  → very small TTC (most dangerous, highest urgency)
+- low       → small TTC (high risk)
+- medium    → moderate TTC
+- high      → large TTC (low risk)
+
+For the raw time_to_collision_s (always non-negative here):
+- A small TTC (e.g. 0–1 s) means high urgency.
+- Medium TTC (e.g. 1–3 s) is moderate risk.
+- Large TTC (e.g. > 4–5 s) is lower urgency.
+
+You must combine time_to_collision_s with:
+
+- closest_distance_during_episode_m
+- distance buckets (very_close, close, far, very_far)
+- distance_trend_bucket (closing, diverging, constant)
+- time_when_closest_s (see Section 8)
+
+to judge how threatening each actor really is at the time of braking.
+
+
+4) Direction, heading, and motion heuristics
+
+You will see:
+
+- heuristic_relative_heading_bucket ∈ { "SAME", "OPPOSITE", "CROSSING", "UNKNOWN" }
+  - SAME      → roughly same heading as ego (car-following, cut-in, lead-brake).
+  - OPPOSITE  → oncoming or opposite direction (left_oppo type situations).
+  - CROSSING  → crossing trajectories (obj_crossing, ped_crossing, right_ped).
+  - UNKNOWN   → heading unclear.
+
+- heuristic_distance_trend_bucket ∈ { "closing", "diverging", "constant", "unknown" }
+  - closing   → actor is getting closer in relative distance.
+  - diverging → actor is moving away.
+  - constant  → distance mostly steady.
+
+- heuristic_cross_direction ∈ { "lateral_crossing", "longitudinal", "unknown" }
+  - lateral_crossing → primarily lateral motion across the ego path (ped_crossing/obj_crossing).
+  - longitudinal     → mostly along the lane (lead_brake, cut_in, car-following).
+  - unknown          → no clear distinction.
+
+You must use these in combination:
+
+- SAME + longitudinal + on_ego_path = strong hint for lead_brake or cut_in.
+- CROSSING + lateral_crossing = strong hint for obj_crossing or ped_crossing.
+- OPPOSITE can support left_oppo or certain crossing situations.
+
+
+5) Stationary actors and approach_stop
+
+You will also see:
+
+- is_stationary_actor ∈ {0, 1}:
+  - 1 → actor is effectively stationary during the episode (very low speeds).
+  - 0 → actor is moving.
+
+Stationary actors near the ego lane can indicate either:
+
+- stopped traffic / stopped car in lane → could be approach_stop if ego is mainly braking for it.
+- irrelevant roadside clutter → if they are far, off-path, or not aligned with the ego.
+
+Use is_stationary_actor together with:
+
+- on_ego_path
+- distance buckets and TTC
+- ego_near_crosswalk / ego_near_stopline
+- min_distance_to_crosswalk_m / min_distance_to_stopline_m
+
+to decide:
+
+- If there is a stationary object on_ego_path with small distance (or very small TTC) that clearly explains the brake, but no dynamic actor is more compelling, that can still be treated as approach_stop (stationary constraint).
+- If infrastructure (crosswalk/stopline) is near and no single actor has a strong dynamic trigger role, approach_stop is preferred.
+
+
+6) How to pick the primary responsible actor
+
+For each actor, you should consider:
+
+- on_ego_path (1 vs 0):
+  Actors with on_ego_path = 1 are strong candidates for cut_in or lead_brake or stationary approach_stop.
+
+- ever_within_3m and closest_distance_during_episode_m:
+  Actors that ever get very close to the ego are more likely causal.
+
+- time_to_collision_s and heuristic_ttc_bucket:
+  - Smaller TTC → higher risk, other things equal.
+
+- distance_trend_bucket:
+  - closing is a strong hint for causal responsibility.
+  - diverging suggests the actor is moving away and less likely to be cause.
+
+- time_when_closest_s:
+  - Negative time_when_closest_s: actor was closest BEFORE the main braking reference; unless other evidence is very strong, such actors are less likely to be the main trigger.
+  - Small positive time_when_closest_s around the braking moment: stronger candidates.
+  - Large positive time_when_closest_s long after braking: usually less causal.
+
+- ego_forward_offset_m:
+  - Positive and not too large → typically ahead of ego (potential lead or crossing).
+  - Negative → behind ego (unlikely to be primary cause of braking).
+
+- heuristic_trajectory_type:
+  - cut_in_like: object coming from side into ego path.
+  - crossing_like: lateral crossing of the ego path.
+  - lead_brake_like: lead-vehicle style car-following.
+  - other: no clear pattern.
+
+- heuristic_relative_heading_bucket and heuristic_cross_direction:
+  - SAME + longitudinal + lead_brake_like → lead_brake candidate.
+  - CROSSING + lateral_crossing → obj_crossing or ped_crossing.
+  - OPPOSITE + intersection context → left_oppo possibility.
+
+- Category (vehicle vs pedestrian vs other):
+  - For ped_crossing or right_ped, a VRU that crosses the path can outrank a distant vehicle.
+
+- GNN ranking (gat_rank, gat_score):
+  - Lower gat_rank (1 is best) and higher gat_score → more likely primary actor.
+  - But do NOT blindly follow GNN; use it as a strong hint combined with TTC, distance, heading, and trajectory.
+
+You must construct an actor_matrix where:
+- Higher risk_score means "more likely causal / more critical" for the ego's braking.
+- The primary_responsible_actor is the actor_id with the strongest combination of:
+  - on_ego_path (when relevant),
+  - closing distance_trend_bucket,
+  - small time_to_collision_s,
+  - small or moderate closest distance,
+  - time_when_closest_s near the braking moment,
+  - consistent trajectory type (cut_in_like, crossing_like, lead_brake_like),
+  - consistent heading and cross_direction,
+  - high gat_score / low gat_rank.
+
+If no actor clearly explains the brake (e.g. all are off-path, behind, diverging, or clearly irrelevant), you may set:
+- primary_responsible_actor = null
+- scenario_classification = "approach_stop" (if braking is more about infrastructure/stopline/stationary constraint) or "other" (if truly unclear).
+
+
+7) Lead_brake vs approach_stop
+
+You MUST be very clear about this distinction:
+
+Choose lead_brake when:
+- There is a moving lead vehicle on or near the ego path (on_ego_path = 1),
+- With clearly small TTC and closing distance_trend_bucket,
+- With SAME heading and longitudinal cross_direction,
+- And its behaviour (e.g. lead_brake_like trajectory) aligns temporally with the ego's braking (time_when_closest_s near the braking interval).
+
+Choose approach_stop when:
+- Infrastructure (crosswalk, stop line, red light) or a stationary constraint is the main reason:
+    - ego_near_crosswalk / ego_near_stopline is true, or
+    - a stationary actor on_ego_path is present but there is no strong dynamic actor trigger.
+- All top-3 actors are off-path, behind, diverging, or not clearly triggering the braking.
+- The ego_brake episode is better explained by “slowing for a stop / junction / queue” than by any single dynamic actor.
+
+If both explanations are possible, explicitly compare them in your reasoning and pick the one that best fits the kinematics and geometry. Do NOT default to lead_brake just because there is a vehicle ahead; you must check closeness, TTC, distance_trend_bucket, and whether its motion really explains the braking.
+
+
+8) Temporal features: time_when_closest_s
+
+time_when_closest_s is measured relative to the braking window reference (e.g. around the peak braking time):
+
+- time_when_closest_s < 0:
+  The actor was closest **before** the main braking moment. This usually makes it LESS likely to be the direct trigger, unless other features strongly contradict that (e.g. still extremely close and on_ego_path).
+
+- time_when_closest_s ≈ 0 or small positive:
+  The actor is closest around the braking episode, which strongly supports causality.
+
+- time_when_closest_s >> 0:
+  The actor becomes closest only later, after the main brake; this usually means it is not the primary trigger.
+
+You must explicitly use time_when_closest_s to reason about whether an actor’s closest approach aligns with the ego’s braking.
+
+
+9) Pedestrian categories
+
+- If a pedestrian/VRU is clearly crossing the ego’s path and causes braking, use:
+  - ped_crossing (generic), or
+  - right_ped if:
+      - the interaction is on the right side AND
+      - it is clearly bound to a right-turn / right-side crossing situation.
+
+Even if downstream evaluation may group ped_crossing and right_ped together, you must still choose the most precise category given the YAML.
+
+
+10) Output format
+
+Your output MUST be valid JSON with this exact structure:
+
+{
+  "actor_matrix": [
+    {"actor_id": "ACTOR1", "risk_score": 80, "reasoning": "…"},
+    {"actor_id": "ACTOR2", "risk_score": 10, "reasoning": "…"},
+    {"actor_id": "ACTOR3", "risk_score": 0,  "reasoning": "…"}
+  ],
+  "primary_responsible_actor": "ACTOR1",  // or null if none
+  "scenario_classification": "cut_in | ped_crossing | obj_crossing | lead_brake | approach_stop | left_oppo | right_ped | other",
+  "confidence_score": 0.0–1.0,
+  "final_rationale": "...",
+  "ego_window_key": "<copy exactly from input ego_window_key>"
+}
+
+Rules:
+
+- risk_score:
+  - Use a scale roughly between 0 and 100.
+  - The primary_responsible_actor should have the highest risk_score (or be tied for highest).
+
+- primary_responsible_actor:
+  - must be one of "ACTOR1"/"ACTOR2"/"ACTOR3", or null if no actor is the main cause.
+
+- ego_window_key:
+  - MUST be copied exactly from the input llm_input. Do not change it.
+
+
+========================
+REASONING STYLE
+========================
+
+Before the JSON, you must briefly explain your reasoning in a few clear paragraphs:
+
+1. Summarize the ego braking episode and environment (duration, peak decel, urban/highway_like, proximity to crosswalk/stopline).
+2. Compare the actors in terms of:
+   - on_ego_path,
+   - ever_within_3m & closest_distance_during_episode_m,
+   - time_to_collision_s and heuristic_ttc_bucket,
+   - distance_trend_bucket and time_when_closest_s (temporal alignment with braking),
+   - trajectory type (cut_in_like, crossing_like, lead_brake_like),
+   - heading / cross_direction (SAME vs CROSSING vs OPPOSITE, lateral vs longitudinal),
+   - is_stationary_actor for stationary constraints,
+   - GAT rank and score.
+3. Decide which actor is primary (if any), then choose the scenario_classification based on the definitions above.
+4. Explicitly mention if you considered lead_brake vs approach_stop and why you chose one over the other when relevant.
+
+Then output ONLY the JSON object as the final machine-readable result. Do NOT wrap it in backticks. Do NOT add extra keys.
+
+
+========================
+FEW-SHOT EXAMPLES
+========================
+
+Below are five examples showing the expected style.
+
+------------------------
+Example A – approach_stop (no primary actor)
+------------------------
+
+Input (YAML):
+
+ego_window_key: synthetic-log-01|1000.000000|1001.700000
+ego_brake_episode:
+  t_start_s: 1000.000000
+  t_peak_brake_s: 1000.850000
+  t_end_s: 1001.700000
+  brake_confidence_score: 0.9533050265
+  peak_deceleration_mps2: 2.381575588458552
+context_brief: The ego experiences a braking episode of about 1.7 s with peak deceleration of 2.381575588458552
+  m/s2 and final brake_confidence_score is 0.9533050265. The environment is classified as urban. min_distance_to_crosswalk_m
+  is 4.380009156974136; min_distance_to_stopline_m is 27.95732517277871. primary_interaction_side is left.
+  ego_near_crosswalk=False, ego_near_stopline=False, has_close_actor=True.
+actors:
+- actor_id: ACTOR1
+  category: REGULAR_VEHICLE
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: -2.939915840414505
+  ego_lateral_offset_m: 5.5477084285486935
+  lane_center_offset_m: 5.5477084285486935
+  closest_distance_during_episode_m: 2.0629743374649516
+  time_when_closest_s: 0.0
+  relative_closing_speed_mps: -2.260090958149004
+  relative_lateral_speed_mps: 0.07096087268432513
+  relative_motion_norm_mps2: 0.06167988848286251
+  time_to_collision_s: 0.912783766523499
+  ever_within_3m: true
+  distance_to_crosswalk_m: 19.28214436717419
+  distance_to_stopline_m: 43.86630446309037
+  in_drivable_area: 1
+  lane_alignment_cosine: -0.9998545384634654
+  heading_alignment_cosine: -0.46824767541472795
+  length_m: 4.819981098175049
+  width_m: 1.74
+  gat_rank: 1
+  gat_score: 0.2613903284072876
+  on_ego_path: 0
+  heuristic_distance_bucket: very_close
+  heuristic_side_bucket: front_left
+  heuristic_ttc_bucket: critical
+  heuristic_trajectory_type: other
+  heuristic_role_hint: other
+  heuristic_is_close: true
+- actor_id: ACTOR2
+  category: PEDESTRIAN
+  is_vehicle: 0
+  is_vulnerable_road_user: 1
+  is_static: 0
+  ego_forward_offset_m: 13.275131303543102
+  ego_lateral_offset_m: -5.894127168011199
+  lane_center_offset_m: -5.894127168011199
+  closest_distance_during_episode_m: 5.038987614073741
+  time_when_closest_s: 2.0
+  relative_closing_speed_mps: 5.861655159278576
+  relative_lateral_speed_mps: 0.12925769461702885
+  relative_motion_norm_mps2: 0.06990044182892734
+  time_to_collision_s: 0.8596526880462062
+  ever_within_3m: false
+  distance_to_crosswalk_m: 4.380009156974136
+  distance_to_stopline_m: 27.95732517277871
+  in_drivable_area: 0
+  lane_alignment_cosine: 0.9995903677598663
+  heading_alignment_cosine: 0.9139630372338279
+  length_m: 0.6
+  width_m: 0.7001690864562988
+  gat_rank: 2
+  gat_score: 0.1154695525765419
+  on_ego_path: 0
+  heuristic_distance_bucket: far
+  heuristic_side_bucket: front_right
+  heuristic_ttc_bucket: critical
+  heuristic_trajectory_type: cut_in_like
+  heuristic_role_hint: side_pedestrian
+  heuristic_is_close: false
+- actor_id: ACTOR3
+  category: PEDESTRIAN
+  is_vehicle: 0
+  is_vulnerable_road_user: 1
+  is_static: 0
+  ego_forward_offset_m: 5.4618458877800125
+  ego_lateral_offset_m: -5.650809429218063
+  lane_center_offset_m: -5.650809429218063
+  closest_distance_during_episode_m: 4.357630500944996
+  time_when_closest_s: 0.6000000238418579
+  relative_closing_speed_mps: 4.325109772816503
+  relative_lateral_speed_mps: 0.021747696360698916
+  relative_motion_norm_mps2: 0.09549210496704592
+  time_to_collision_s: 1.007519052656857
+  ever_within_3m: false
+  distance_to_crosswalk_m: 11.229297432601038
+  distance_to_stopline_m: 35.72927970028554
+  in_drivable_area: 0
+  lane_alignment_cosine: 0.9996313202880782
+  heading_alignment_cosine: 0.694982416947949
+  length_m: 0.6
+  width_m: 0.6955399513244629
+  gat_rank: 3
+  gat_score: 0.11313259601593018
+  on_ego_path: 0
+  heuristic_distance_bucket: close
+  heuristic_side_bucket: front_right
+  heuristic_ttc_bucket: low
+  heuristic_trajectory_type: cut_in_like
+  heuristic_role_hint: side_pedestrian
+  heuristic_is_close: true
+ego_map_summary:
+  min_distance_to_crosswalk_m: 4.380009156974136
+  min_distance_to_stopline_m: 27.95732517277871
+  num_actors_in_drivable_area: 1
+  num_actors_off_drivable_area: 2
+  num_vru_near_crosswalk: 1
+  num_ped_near_crosswalk: 1
+  road_type_hint: urban
+scenario_hints:
+  primary_interaction_side: left
+  ego_near_crosswalk: false
+  ego_near_stopline: false
+  has_close_actor: true
+
+Example A – Reasoning (sketch):
+- Ego brakes in urban environment near a crosswalk.
+- ACTOR1 is behind the ego (negative forward offset) and moving away / misaligned, not on the ego path.
+- ACTOR2 and ACTOR3 are pedestrians off the ego path and do not get within 3m.
+- No actor explains the braking as well as “approaching infrastructure / general slow-down”.
+- Conclusion: approach_stop, no primary actor.
+
+Expected JSON:
+
+{
+  "actor_matrix": [
+    {
+      "actor_id": "ACTOR1",
+      "risk_score": 0,
+      "reasoning": "Actor is behind the ego and moving away; not in the ego’s path."
+    },
+    {
+      "actor_id": "ACTOR2",
+      "risk_score": 0,
+      "reasoning": "Pedestrian ahead but not crossing the ego’s lane and stays beyond 4 m."
+    },
+    {
+      "actor_id": "ACTOR3",
+      "risk_score": 0,
+      "reasoning": "Pedestrian ahead, not on the ego’s path, and remains farther than 4 m."
+    }
+  ],
+  "primary_responsible_actor": null,
+  "scenario_classification": "approach_stop",
+  "confidence_score": 0.75,
+  "final_rationale": "The ego vehicle’s braking coincides with approaching a crosswalk region in an urban environment, but no actor is in the ego’s forward path or within a critical distance that would trigger braking. Actor 1 is behind and moving away, while Actors 2 and 3 are pedestrians ahead but not crossing the ego’s lane. Therefore the braking is attributed to infrastructure / general slow-down rather than any actor, fitting the approach_stop category.",
+  "ego_window_key": "synthetic-log-01|1000.000000|1001.700000"
+}
+
+
+------------------------
+Example B – lead_brake (primary actor = ACTOR1)
+------------------------
+
+Input (YAML):
+
+ego_window_key: synthetic-log-02|2000.000000|2002.850000
+ego_brake_episode:
+  t_start_s: 2000.000000
+  t_peak_brake_s: 2001.425000
+  t_end_s: 2002.850000
+  brake_confidence_score: 0.2043321119
+  peak_deceleration_mps2: 3.715861805897717
+context_brief: The ego experiences a braking episode of about 2.8 s with peak deceleration of 3.715861805897717
+  m/s2 and final brake_confidence_score is 0.2043321119. The environment is classified as urban. min_distance_to_crosswalk_m
+  is 3.1079927163580665; min_distance_to_stopline_m is 3.1079927163580665. primary_interaction_side is
+  left. ego_near_crosswalk=False, ego_near_stopline=False, has_close_actor=True.
+actors:
+- actor_id: ACTOR1
+  category: REGULAR_VEHICLE
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: 28.559453307975296
+  ego_lateral_offset_m: 0.5128523459475751
+  lane_center_offset_m: 0.5128523459475751
+  closest_distance_during_episode_m: 8.2893036851742
+  time_when_closest_s: 2.0
+  relative_closing_speed_mps: 7.726668933967539
+  relative_lateral_speed_mps: 0.06774242481998322
+  relative_motion_norm_mps2: 0.6859296211772047
+  time_to_collision_s: 1.072817245829343
+  ever_within_3m: false
+  distance_to_crosswalk_m: 13.041130364902441
+  distance_to_stopline_m: 13.041130364902441
+  in_drivable_area: 1
+  lane_alignment_cosine: 0.9971144677898603
+  heading_alignment_cosine: 0.9998388056189484
+  length_m: 4.03
+  width_m: 2.0646276473999023
+  gat_rank: 1
+  gat_score: 0.4654958248138428
+  on_ego_path: 1
+  heuristic_distance_bucket: very_far
+  heuristic_side_bucket: front_left
+  heuristic_ttc_bucket: low
+  heuristic_trajectory_type: lead_brake_like
+  heuristic_role_hint: lead_vehicle
+  heuristic_is_close: true
+- actor_id: ACTOR2
+  category: PEDESTRIAN
+  is_vehicle: 0
+  is_vulnerable_road_user: 1
+  is_static: 0
+  ego_forward_offset_m: 7.629024659045427
+  ego_lateral_offset_m: 8.872098251507351
+  lane_center_offset_m: 8.872098251507351
+  closest_distance_during_episode_m: 7.402298412213563
+  time_when_closest_s: 0.800000011920929
+  relative_closing_speed_mps: 6.7310397608451895
+  relative_lateral_speed_mps: 0.018634984729399284
+  relative_motion_norm_mps2: 0.08876175930147953
+  time_to_collision_s: 1.0997258484897268
+  ever_within_3m: false
+  distance_to_crosswalk_m: 3.1079927163580665
+  distance_to_stopline_m: 3.1079927163580665
+  in_drivable_area: 1
+  lane_alignment_cosine: -0.35426292941404475
+  heading_alignment_cosine: 0.6519911307138639
+  length_m: 0.8302096128463745
+  width_m: 0.9138717651367188
+  gat_rank: 2
+  gat_score: 0.11158738285303116
+  on_ego_path: 0
+  heuristic_distance_bucket: close
+  heuristic_side_bucket: front_left
+  heuristic_ttc_bucket: low
+  heuristic_trajectory_type: cut_in_like
+  heuristic_role_hint: side_pedestrian
+  heuristic_is_close: true
+- actor_id: ACTOR3
+  category: REGULAR_VEHICLE
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: 12.772524042247355
+  ego_lateral_offset_m: 13.925812061792316
+  lane_center_offset_m: 13.925812061792316
+  closest_distance_during_episode_m: 8.289281849266661
+  time_when_closest_s: 1.199999988079071
+  relative_closing_speed_mps: 5.674457946333737
+  relative_lateral_speed_mps: 0.27844151192895167
+  relative_motion_norm_mps2: 0.33667492118902215
+  time_to_collision_s: 1.460805935591145
+  ever_within_3m: false
+  distance_to_crosswalk_m: 4.551498862381107
+  distance_to_stopline_m: 4.551498862381107
+  in_drivable_area: 0
+  lane_alignment_cosine: -0.13067671256734564
+  heading_alignment_cosine: 0.6759315459702069
+  length_m: 4.116290092468262
+  width_m: 1.74
+  gat_rank: 3
+  gat_score: 0.06073366850614548
+  on_ego_path: 0
+  heuristic_distance_bucket: very_far
+  heuristic_side_bucket: front_left
+  heuristic_ttc_bucket: low
+  heuristic_trajectory_type: cut_in_like
+  heuristic_role_hint: lead_vehicle
+  heuristic_is_close: false
+ego_map_summary:
+  min_distance_to_crosswalk_m: 3.1079927163580665
+  min_distance_to_stopline_m: 3.1079927163580665
+  num_actors_in_drivable_area: 2
+  num_actors_off_drivable_area: 1
+  num_vru_near_crosswalk: 1
+  num_ped_near_crosswalk: 1
+  road_type_hint: urban
+scenario_hints:
+  primary_interaction_side: left
+  ego_near_crosswalk: false
+  ego_near_stopline: false
+  has_close_actor: true
+
+Example B – Reasoning (sketch):
+- Ego brakes in urban environment, primary interaction side left.
+- ACTOR1 is a regular vehicle ahead, on_ego_path = 1, with low TTC and lead_brake_like trajectory.
+- ACTOR2 is a side pedestrian; ACTOR3 is far and off-path.
+- The kinematics match a classic lead vehicle braking scenario, not infrastructure.
+- Conclusion: lead_brake, primary actor = ACTOR1.
+
+Expected JSON:
+
+{
+  "actor_matrix": [
+    {
+      "actor_id": "ACTOR1",
+      "risk_score": 85,
+      "reasoning": "Actor 1 is directly ahead, on the ego’s lane, with a short TTC and lead-brake-like behaviour, making it the primary cause of the ego’s braking."
+    },
+    {
+      "actor_id": "ACTOR2",
+      "risk_score": 10,
+      "reasoning": "The pedestrian is far to the side and not on the ego path; its motion does not explain the braking."
+    },
+    {
+      "actor_id": "ACTOR3",
+      "risk_score": 5,
+      "reasoning": "Actor 3 is also off the ego path and too far laterally to influence the ego’s braking."
+    }
+  ],
+  "primary_responsible_actor": "ACTOR1",
+  "scenario_classification": "lead_brake",
+  "confidence_score": 0.85,
+  "final_rationale": "The ego’s braking aligns temporally with the lead vehicle’s short TTC and closing motion on the same lane. No other actor or infrastructure explains the deceleration, so the event is classified as a lead_brake scenario with high confidence.",
+  "ego_window_key": "synthetic-log-02|2000.000000|2002.850000"
+}
+
+
+------------------------
+Example C – ped_crossing (primary actor = ACTOR1)
+------------------------
+
+Input (YAML):
+
+ego_window_key: synthetic-log-03|3000.000000|3001.150000
+ego_brake_episode:
+  t_start_s: 3000.000000
+  t_peak_brake_s: 3000.575000
+  t_end_s: 3001.150000
+  brake_confidence_score: 0.7626247193
+  peak_deceleration_mps2: 1.363850330254139
+context_brief: The ego experiences a braking episode of about 1.2 s with peak deceleration of 1.363850330254139
+  m/s2 and final brake_confidence_score is 0.7626247193. The environment is classified as urban. min_distance_to_crosswalk_m
+  is 1.1610221363241737; min_distance_to_stopline_m is 33.704907448623935. primary_interaction_side is
+  left. ego_near_crosswalk=True, ego_near_stopline=False, has_close_actor=True.
+actors:
+- actor_id: ACTOR1
+  category: PEDESTRIAN
+  is_vehicle: 0
+  is_vulnerable_road_user: 1
+  is_static: 0
+  ego_forward_offset_m: 10.482536047610234
+  ego_lateral_offset_m: 4.943323562468262
+  lane_center_offset_m: 4.943323562468262
+  closest_distance_during_episode_m: 4.448526497836089
+  time_when_closest_s: 2.0
+  relative_closing_speed_mps: 2.847483525837055
+  relative_lateral_speed_mps: 0.37110710055646756
+  relative_motion_norm_mps2: 0.4521688708837305
+  time_to_collision_s: 1.5622659297136359
+  ever_within_3m: false
+  distance_to_crosswalk_m: 1.1610221363241737
+  distance_to_stopline_m: 37.91727947566226
+  in_drivable_area: 1
+  lane_alignment_cosine: 0.7201320877761969
+  heading_alignment_cosine: 0.9044738332426778
+  length_m: 0.71405029296875
+  width_m: 0.6726924777030945
+  gat_rank: 1
+  gat_score: 0.23608875274658203
+  on_ego_path: 0
+  heuristic_distance_bucket: close
+  heuristic_side_bucket: front_left
+  heuristic_ttc_bucket: low
+  heuristic_trajectory_type: cut_in_like
+  heuristic_role_hint: side_pedestrian
+  heuristic_is_close: true
+- actor_id: ACTOR2
+  category: REGULAR_VEHICLE
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: -6.332308234278813
+  ego_lateral_offset_m: -2.3909568130842014
+  lane_center_offset_m: -2.3909568130842014
+  closest_distance_during_episode_m: 1.4562763566555772
+  time_when_closest_s: -1.0
+  relative_closing_speed_mps: 0.5175978788801399
+  relative_lateral_speed_mps: 1.6282707344339749
+  relative_motion_norm_mps2: 0.9856067075851492
+  time_to_collision_s: 2.813528447617165
+  ever_within_3m: true
+  distance_to_crosswalk_m: 1.1742109067550826
+  distance_to_stopline_m: 54.57622445655589
+  in_drivable_area: 1
+  lane_alignment_cosine: 0.7603103800523098
+  heading_alignment_cosine: -0.9355330601908887
+  length_m: 5.809624671936035
+  width_m: 2.2362940311431885
+  gat_rank: 2
+  gat_score: 0.22595708072185516
+  on_ego_path: 0
+  heuristic_distance_bucket: very_close
+  heuristic_side_bucket: front_right
+  heuristic_ttc_bucket: medium
+  heuristic_trajectory_type: crossing_like
+  heuristic_role_hint: crossing_vehicle
+  heuristic_is_close: true
+- actor_id: ACTOR3
+  category: BOLLARD
+  is_vehicle: 0
+  is_vulnerable_road_user: 0
+  is_static: 1
+  ego_forward_offset_m: 15.216937237118092
+  ego_lateral_offset_m: 7.803161303952024
+  lane_center_offset_m: 7.803161303952024
+  closest_distance_during_episode_m: 8.289305587029961
+  time_when_closest_s: 2.0
+  relative_closing_speed_mps: 1.5320039508729921
+  relative_lateral_speed_mps: 0.007868467336714362
+  relative_motion_norm_mps2: 0.009983652838502492
+  time_to_collision_s: 5.4107599280709495
+  ever_within_3m: false
+  distance_to_crosswalk_m: 2.2117102334821936
+  distance_to_stopline_m: 33.704907448623935
+  in_drivable_area: 0
+  lane_alignment_cosine: 0.683778250689602
+  heading_alignment_cosine: 0.8898268710862445
+  length_m: 0.18914051353931427
+  width_m: 0.14744986593723297
+  gat_rank: 3
+  gat_score: 0.11749160289764404
+  on_ego_path: 0
+  heuristic_distance_bucket: far
+  heuristic_side_bucket: front_left
+  heuristic_ttc_bucket: high
+  heuristic_trajectory_type: cut_in_like
+  heuristic_role_hint: lead_vehicle
+  heuristic_is_close: false
+ego_map_summary:
+  min_distance_to_crosswalk_m: 1.1610221363241737
+  min_distance_to_stopline_m: 33.704907448623935
+  num_actors_in_drivable_area: 2
+  num_actors_off_drivable_area: 1
+  num_vru_near_crosswalk: 1
+  num_ped_near_crosswalk: 1
+  road_type_hint: urban
+scenario_hints:
+  primary_interaction_side: left
+  ego_near_crosswalk: true
+  ego_near_stopline: false
+  has_close_actor: true
+
+Example C – Reasoning (sketch):
+- Ego brakes near a crosswalk with a pedestrian ahead.
+- ACTOR1 (pedestrian) is front-side, close (~4–5 m), short TTC → direct trigger.
+- ACTOR2 is behind the ego, irrelevant.
+- ACTOR3 is a far static object.
+- The braking aligns with pedestrian behaviour crossing/approaching the ego’s path.
+- Conclusion: ped_crossing, primary actor = ACTOR1.
+
+Expected JSON:
+
+{
+  "actor_matrix": [
+    {
+      "actor_id": "ACTOR1",
+      "risk_score": 85,
+      "reasoning": "The pedestrian is in front of the ego, close (≈4.45 m), with a short TTC and located near the crosswalk, directly explaining the need to brake."
+    },
+    {
+      "actor_id": "ACTOR2",
+      "risk_score": 15,
+      "reasoning": "The vehicle is behind the ego and not on the ego’s path, so it contributes minimally to the braking."
+    },
+    {
+      "actor_id": "ACTOR3",
+      "risk_score": 5,
+      "reasoning": "The bollard is far ahead with a long TTC and does not influence the ego’s braking."
+    }
+  ],
+  "primary_responsible_actor": "ACTOR1",
+  "scenario_classification": "ped_crossing",
+  "confidence_score": 0.85,
+  "final_rationale": "The ego’s braking coincides with the pedestrian’s presence near the crosswalk, with the pedestrian being the only front-side actor within a critical TTC. The vehicle behind and the bollard are too distant or not in the ego’s path to justify the brake. Therefore, the event is best classified as a pedestrian crossing scenario, with the pedestrian as the primary cause.",
+  "ego_window_key": "synthetic-log-03|3000.000000|3001.150000"
+}
+
+
+------------------------
+Example D – cut_in (primary actor = ACTOR1)
+------------------------
+
+Input (YAML):
+
+ego_window_key: synthetic-log-04|4000.000000|4001.450000
+ego_brake_episode:
+  t_start_s: 4000.000000
+  t_peak_brake_s: 4000.725000
+  t_end_s: 4001.450000
+  brake_confidence_score: 0.8875594851
+  peak_deceleration_mps2: 2.361616043756379
+context_brief: The ego experiences a braking episode of about 1.4 s with peak deceleration of 2.361616043756379
+  m/s2 and final brake_confidence_score is 0.8875594851. The environment is classified as urban. min_distance_to_crosswalk_m
+  is 13.651583781421747; min_distance_to_stopline_m is 13.651583781421747. primary_interaction_side is
+  right. ego_near_crosswalk=False, ego_near_stopline=False, has_close_actor=True.
+actors:
+- actor_id: ACTOR1
+  category: REGULAR_VEHICLE
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: 7.813268457863072
+  ego_lateral_offset_m: -2.2558728047987584
+  lane_center_offset_m: -2.2558728047987584
+  closest_distance_during_episode_m: 2.704257358891221
+  time_when_closest_s: 1.199999988079071
+  relative_closing_speed_mps: 1.6430534987791312
+  relative_lateral_speed_mps: 0.25405898488446954
+  relative_motion_norm_mps2: 0.19773613644754393
+  time_to_collision_s: 1.6458729803385075
+  ever_within_3m: true
+  distance_to_crosswalk_m: 13.651583781421747
+  distance_to_stopline_m: 13.651583781421747
+  in_drivable_area: 1
+  lane_alignment_cosine: 0.9996833913079122
+  heading_alignment_cosine: 0.9607565859735844
+  length_m: 4.151012420654297
+  width_m: 1.74
+  gat_rank: 1
+  gat_score: 1.0525449514389038
+  on_ego_path: 1
+  heuristic_distance_bucket: very_close
+  heuristic_side_bucket: front_right
+  heuristic_ttc_bucket: low
+  heuristic_trajectory_type: cut_in_like
+  heuristic_role_hint: lead_vehicle
+  heuristic_is_close: true
+- actor_id: ACTOR2
+  category: REGULAR_VEHICLE
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: 15.40800800487771
+  ego_lateral_offset_m: 0.2777316952526073
+  lane_center_offset_m: 0.2777316952526073
+  closest_distance_during_episode_m: 8.289240224573684
+  time_when_closest_s: 0.3999999761581421
+  relative_closing_speed_mps: 0.8638903704871982
+  relative_lateral_speed_mps: 0.01684515629262473
+  relative_motion_norm_mps2: 0.702179734277724
+  time_to_collision_s: 9.595245540124376
+  ever_within_3m: false
+  distance_to_crosswalk_m: 17.171009160187854
+  distance_to_stopline_m: 17.171009160187854
+  in_drivable_area: 1
+  lane_alignment_cosine: 0.9996833913079153
+  heading_alignment_cosine: 0.9998375865130024
+  length_m: 4.03
+  width_m: 1.74
+  gat_rank: 2
+  gat_score: 0.5428019762039185
+  on_ego_path: 1
+  heuristic_distance_bucket: far
+  heuristic_side_bucket: front
+  heuristic_ttc_bucket: high
+  heuristic_trajectory_type: lead_brake_like
+  heuristic_role_hint: lead_vehicle
+  heuristic_is_close: false
+- actor_id: ACTOR3
+  category: REGULAR_VEHICLE
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: 24.69378169952291
+  ego_lateral_offset_m: -0.16511826488875703
+  lane_center_offset_m: -0.16511826488875703
+  closest_distance_during_episode_m: 8.289306334778564
+  time_when_closest_s: -2.0
+  relative_closing_speed_mps: 1.8218254853933329
+  relative_lateral_speed_mps: 0.016684655137157986
+  relative_motion_norm_mps2: 0.09246556440949816
+  time_to_collision_s: 4.55000020651753
+  ever_within_3m: false
+  distance_to_crosswalk_m: 25.649716702808778
+  distance_to_stopline_m: 25.649716702808778
+  in_drivable_area: 1
+  lane_alignment_cosine: 0.9996833913079145
+  heading_alignment_cosine: 0.9999776452166751
+  length_m: 4.03
+  width_m: 1.7958190441131592
+  gat_rank: 3
+  gat_score: 0.2738317847251892
+  on_ego_path: 1
+  heuristic_distance_bucket: very_far
+  heuristic_side_bucket: front
+  heuristic_ttc_bucket: medium
+  heuristic_trajectory_type: lead_brake_like
+  heuristic_role_hint: lead_vehicle
+  heuristic_is_close: false
+ego_map_summary:
+  min_distance_to_crosswalk_m: 13.651583781421747
+  min_distance_to_stopline_m: 13.651583781421747
+  num_actors_in_drivable_area: 3
+  num_actors_off_drivable_area: 0
+  num_vru_near_crosswalk: 0
+  num_ped_near_crosswalk: 0
+  road_type_hint: urban
+scenario_hints:
+  primary_interaction_side: right
+  ego_near_crosswalk: false
+  ego_near_stopline: false
+  has_close_actor: true
+
+Example D – Reasoning (sketch):
+- Ego brakes while ACTOR1 moves into its lane with close distance and short TTC.
+- ACTOR1 has cut_in-like trajectory and is within 3 m → strong causal trigger.
+- ACTOR2 and ACTOR3 remain far (>8 m) with long TTC.
+- No infrastructure factor explains the braking.
+- Conclusion: cut_in, primary actor = ACTOR1.
+
+Expected JSON:
+
+{
+  "actor_matrix": [
+    {
+      "actor_id": "ACTOR1",
+      "risk_score": 90,
+      "reasoning": "Actor 1 comes within 3 m, has a short TTC, and cuts into the ego lane from the right, directly causing the ego to brake."
+    },
+    {
+      "actor_id": "ACTOR2",
+      "risk_score": 5,
+      "reasoning": "Actor 2 remains >8 m away with a long TTC and does not influence the ego’s braking."
+    },
+    {
+      "actor_id": "ACTOR3",
+      "risk_score": 5,
+      "reasoning": "Actor 3 is >8 m away with a moderate TTC and has no impact on the ego’s braking."
+    }
+  ],
+  "primary_responsible_actor": "ACTOR1",
+  "scenario_classification": "cut_in",
+  "confidence_score": 0.92,
+  "final_rationale": "The ego’s braking is triggered by a vehicle that cuts into its lane from the right side, as evidenced by the close proximity, short TTC, and cut-in trajectory. No other actor or infrastructure explains the deceleration, so the event is classified as a cut-in scenario with high confidence.",
+  "ego_window_key": "synthetic-log-04|4000.000000|4001.450000"
+}
+
+
+------------------------
+Example E – obj_crossing (primary actor = ACTOR1)
+------------------------
+
+Input (YAML):
+
+ego_window_key: synthetic-log-05|5000.000000|5001.400000
+ego_brake_episode:
+  t_start_s: 5000.000000
+  t_peak_brake_s: 5000.700000
+  t_end_s: 5001.400000
+  brake_confidence_score: 0.9593863407000001
+  peak_deceleration_mps2: 4.184740372637659
+context_brief: The ego experiences a braking episode of about 1.4 s with peak deceleration of 4.184740372637659
+  m/s2 and final brake_confidence_score is 0.9593863407000001. The environment is classified as urban.
+  min_distance_to_crosswalk_m is 0.30817730046905545; min_distance_to_stopline_m is 3.865740628526373.
+  primary_interaction_side is right. ego_near_crosswalk=True, ego_near_stopline=True, has_close_actor=True.
+actors:
+- actor_id: ACTOR1
+  category: BUS
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: 11.836171060122906
+  ego_lateral_offset_m: -4.2772973052813565
+  lane_center_offset_m: -4.2772973052813565
+  closest_distance_during_episode_m: 3.868947838224107
+  time_when_closest_s: 1.399999976158142
+  relative_closing_speed_mps: 5.864665486833428
+  relative_lateral_speed_mps: 6.2242720193853875
+  relative_motion_norm_mps2: 1.3048294950332628
+  time_to_collision_s: 0.6597047771795608
+  ever_within_3m: false
+  distance_to_crosswalk_m: 0.30817730046905545
+  distance_to_stopline_m: 11.907586038268002
+  in_drivable_area: 1
+  lane_alignment_cosine: -0.06316131702467118
+  heading_alignment_cosine: 0.9404745666345405
+  length_m: 9.5
+  width_m: 2.6976513862609863
+  gat_rank: 1
+  gat_score: 0.8873976469039917
+  on_ego_path: 0
+  heuristic_distance_bucket: close
+  heuristic_side_bucket: front_right
+  heuristic_ttc_bucket: critical
+  heuristic_trajectory_type: crossing_like
+  heuristic_role_hint: crossing_vehicle
+  heuristic_is_close: true
+- actor_id: ACTOR2
+  category: REGULAR_VEHICLE
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: 4.319152483165424
+  ego_lateral_offset_m: 4.054054767355802
+  lane_center_offset_m: 4.054054767355802
+  closest_distance_during_episode_m: 2.4751220192157866
+  time_when_closest_s: 0.3999999761581421
+  relative_closing_speed_mps: 4.107954180068931
+  relative_lateral_speed_mps: 1.935356691104699
+  relative_motion_norm_mps2: 1.666064216455847
+  time_to_collision_s: 0.6025193833038942
+  ever_within_3m: true
+  distance_to_crosswalk_m: 3.056674737879895
+  distance_to_stopline_m: 19.37336254291806
+  in_drivable_area: 1
+  lane_alignment_cosine: 0.9995778946602335
+  heading_alignment_cosine: 0.7291286116139808
+  length_m: 5.610869407653809
+  width_m: 1.7466917037963867
+  gat_rank: 2
+  gat_score: 0.6556211709976196
+  on_ego_path: 0
+  heuristic_distance_bucket: very_close
+  heuristic_side_bucket: front_left
+  heuristic_ttc_bucket: critical
+  heuristic_trajectory_type: crossing_like
+  heuristic_role_hint: crossing_vehicle
+  heuristic_is_close: true
+- actor_id: ACTOR3
+  category: REGULAR_VEHICLE
+  is_vehicle: 1
+  is_vulnerable_road_user: 0
+  is_static: 0
+  ego_forward_offset_m: 30.643888275528184
+  ego_lateral_offset_m: 0.38780996052429195
+  lane_center_offset_m: 0.38780996052429195
+  closest_distance_during_episode_m: 8.289306334778564
+  time_when_closest_s: -2.0
+  relative_closing_speed_mps: 3.7212472690377147
+  relative_lateral_speed_mps: 0.27271981394703054
+  relative_motion_norm_mps2: 0.18746439667278378
+  time_to_collision_s: 2.227561281334071
+  ever_within_3m: false
+  distance_to_crosswalk_m: 3.865740628526373
+  distance_to_stopline_m: 3.865740628526373
+  in_drivable_area: 1
+  lane_alignment_cosine: -0.9993449247021509
+  heading_alignment_cosine: 0.9999199303335659
+  length_m: 4.199491024017334
+  width_m: 1.833561897277832
+  gat_rank: 3
+  gat_score: 0.42412614822387695
+  on_ego_path: 1
+  heuristic_distance_bucket: very_far
+  heuristic_side_bucket: front
+  heuristic_ttc_bucket: low
+  heuristic_trajectory_type: lead_brake_like
+  heuristic_role_hint: lead_vehicle
+  heuristic_is_close: false
+ego_map_summary:
+  min_distance_to_crosswalk_m: 0.30817730046905545
+  min_distance_to_stopline_m: 3.865740628526373
+  num_actors_in_drivable_area: 3
+  num_actors_off_drivable_area: 0
+  num_vru_near_crosswalk: 0
+  num_ped_near_crosswalk: 0
+  road_type_hint: urban
+scenario_hints:
+  primary_interaction_side: right
+  ego_near_crosswalk: true
+  ego_near_stopline: true
+  has_close_actor: true
+
+Example E – Reasoning (sketch):
+- Ego brakes in an urban environment with two vehicles crossing its path.
+- ACTOR1 (bus) crosses from the right with short TTC and high lateral speed → most critical.
+- ACTOR2 also crosses but is slower and slightly less critical.
+- ACTOR3 is far ahead and irrelevant.
+- The braking aligns with lateral intrusion, not lead-brake or infrastructure.
+- Conclusion: obj_crossing, primary actor = ACTOR1.
+
+Expected JSON:
+
+{
+  "actor_matrix": [
+    {
+      "actor_id": "ACTOR1",
+      "risk_score": 80,
+      "reasoning": "The bus on the right side has high lateral speed and a very short TTC, making it the most immediate crossing threat to the ego’s lane."
+    },
+    {
+      "actor_id": "ACTOR2",
+      "risk_score": 40,
+      "reasoning": "The regular vehicle on the left is slightly closer and also crossing, but its motion is somewhat less critical than the bus."
+    },
+    {
+      "actor_id": "ACTOR3",
+      "risk_score": 10,
+      "reasoning": "The far vehicle is 30 m ahead with a longer TTC and does not influence the immediate braking."
+    }
+  ],
+  "primary_responsible_actor": "ACTOR1",
+  "scenario_classification": "obj_crossing",
+  "confidence_score": 0.78,
+  "final_rationale": "The ego vehicle brakes as it approaches a crosswalk in an urban setting while two vehicles cross its lane. The bus on the right has the most critical combination of short TTC and high lateral speed, while the other vehicle plays a secondary role and the distant lead vehicle does not contribute. This matches the obj_crossing category, with the primary interaction on the right side.",
+  "ego_window_key": "synthetic-log-05|5000.000000|5001.400000"
+}
+
+
+========================
+NOW YOUR TASK
+========================
+
+Now you will be given a NEW scenario in the same YAML format as above:
+
+<<<SCENARIO_YAML>>>
+
+1. Carefully analyze this scenario following the global rules and using the examples as guidance.
+2. First, write a brief reasoning explanation in a few paragraphs.
+3. Then output ONLY the final JSON object in the required schema.
+
+Remember:
+- Use time_to_collision_s together with distance and distance_trend_bucket to judge urgency.
+- Use time_when_closest_s to check whether the actor’s closest approach aligns with the braking moment.
+- Make a clear choice between lead_brake and approach_stop using heading, trajectory, stationarity, and infrastructure cues.
+- Choose the most appropriate scenario_classification from the allowed list.
+- Select a single primary_responsible_actor (or null) and justify it with risk_score and reasoning.

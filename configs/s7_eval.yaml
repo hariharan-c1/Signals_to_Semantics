@@ -1,0 +1,53 @@
+db:
+  env_file: configs/db.env
+
+eval:
+  split_name: val50
+  backend_id: null
+  backend_scope_all: false
+  dedup_by_log_id: true
+  exclude_same_log: false
+  top_k_list: [1, 3, 5, 10]
+  gt_support_min: 2
+  llm_conf_min: 0.85
+  s1_min: 0.0
+  gat_top1_min: 0.0
+
+rerank:
+  enabled: false
+  w_evidence: 0.25
+  weights:
+    near_crosswalk: 0.7
+    near_stopline: 0.7
+    has_close_actor: 0.4
+    num_ped_near_crosswalk: 0.6
+    num_vru_near_crosswalk: 0.5
+    episode_score_final: 0.4
+    peak_decel_mps2: 0.2
+    gat_top1_score: 0.5
+
+ollama:
+  base_url: http://127.0.0.1:11434
+  embedding_model: embeddinggemma:latest
+  embed_dim: 768
+
+outputs:
+  out_dir: artifacts/train650_val50/val50/s7/evaluation
+  make_umap: true
+  umap:
+    n_neighbors: 15
+    min_dist: 0.10
+    metric: cosine
+    random_state: 42
+
+queries:
+  cut_in:
+    - Ego brakes because a nearby vehicle merges laterally into its lane.
+  lead_brake:
+    - Ego brakes in response to a lead vehicle decelerating in the same lane.
+  approach_stop:
+    - Ego decelerates while approaching a stop line or stationary queue.
+  obj_crossing:
+    - Ego brakes because an object or vehicle crosses its path.
+  ped_crossing:
+    - Ego brakes to yield to a pedestrian crossing the driving path.

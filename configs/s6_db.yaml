@@ -1,0 +1,62 @@
+db:
+  env_file: configs/db.env
+
+runtime:
+  batch_size: 2000
+  create_tables: true
+  log_level: INFO
+  window_key:
+    t_precision: 6
+
+s6a_windows:
+  split_name: val50
+  detector_name: accel_jerk_union
+  input_jsonl: artifacts/train650_val50/val50/detect/brakes_all_union.jsonl
+
+s6b:
+  tagged_jsonl: artifacts/train650_val50/val50/tag/val50_tagged.jsonl
+  features_parquet: artifacts/train650_val50/val50/features/val50_features.parquet
+
+s6c:
+  split_name: val50
+  scores_parquet: artifacts/train650_val50/val50/s1d/final_scores.parquet
+
+s6d:
+  split_name: val50
+  embeddings_dir: artifacts/train650_val50/val50/s2/contrastive
+  embedding_dim: 128
+  nan_policy: error
+
+s6e:
+  split_name: val50
+  teacher_parquet: artifacts/train650_val50/val50/s3/quasi/teacher.parquet
+  top3_parquet: artifacts/train650_val50/val50/s3/quasi/graphs/val50/top3_infer.parquet
+
+s6f:
+  split_name: val50
+  tags_norm_jsonl: artifacts/train650_val50/val50/s1a/tags_norm.jsonl
+  window_labels_jsonl: artifacts/train650_val50/val50/s1a/window_labels.jsonl
+
+s6g:
+  split_name: val50
+  s5_root: artifacts/train650_val50/val50/s5
+  s4_evidence_root: artifacts/train650_val50/val50/s4
+  prompt_allowlist: [base_prompt, cp, CoT, ALLINONE]
+  backend_allowlist: [llm_gpt-5-chat, llm_gpt-5-mini, llm_ollama_gpt-oss]
+  label_map:
+    right_ped: ped_crossing
+    traffic_sign: approach_stop
+
+s6h:
+  split_name: val50
+  ollama_url: http://127.0.0.1:11434
+  table_name: scenario_embeddings_gemma
+  embed_dim: 768
+  timeout_s: 120
+  embedding_models: [embeddinggemma:latest]
+  include_actor_matrix_json: true
+  include_parsed_result_json: true
+
+s6i:
+  split_name: val50
+  out_csv: artifacts/train650_val50/val50/s6/s6i_report_val50.csv
