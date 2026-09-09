@@ -1,8 +1,9 @@
 # Repository scope
 
-The release is intentionally source-first. It is designed to be understandable
-on GitHub and reproducible by a researcher who obtains the dataset and
-regenerates artifacts.
+The release combines a source-first research repository with a compact,
+real-data demonstration. It is designed to be understandable on GitHub and
+reproducible by a researcher who obtains the dataset and regenerates bulk
+artifacts.
 
 ## Included
 
@@ -13,8 +14,9 @@ regenerates artifacts.
 | Configuration | Thresholds, feature schema, safe templates, and fixed split manifests |
 | LLM material | Five prompt variants with sanitized illustrative identifiers |
 | Contracts | Evidence and LLM-output JSON Schemas |
-| Examples | Fully synthetic evidence and model output |
-| Results | Small verified JSON and CSV summaries |
+| Examples | Synthetic schema examples plus one real S0–S7 traceability case |
+| Results | Final defense JSON and CSV summaries plus supporting integrity counts |
+| Media | One compressed scenario clip and poster with a separate AV2 data notice |
 | Project files | README, license, citation, CI, tests, and contributor guidance |
 
 ## Excluded
@@ -25,7 +27,7 @@ regenerates artifacts.
 | Bulk `results/` and `Repro/` trees | Generated artifacts, duplication, and repository size |
 | Model checkpoints and serialized estimators | Large reproducible outputs, not source |
 | PostgreSQL dumps | Generated data and possible local metadata |
-| LLM response corpus and media | Generated data, cost, size, and provenance |
+| Bulk LLM response corpus and media | Generated data, cost, size, and provenance |
 | Credentials and populated environment files | Security |
 | Machine-specific absolute paths | Portability and privacy |
 | Embedded `.git` directory | The archive did not contain a usable published history |
@@ -37,5 +39,7 @@ regenerates artifacts.
 ## Publication rule
 
 Generated experiment artifacts belong under `artifacts/` and are ignored by
-Git. Add only compact, documented summaries to `results/verified/`. Any new
-third-party-derived code must include a provenance review before publication.
+Git. Add only final, documented summaries to `results/verified/` or a small
+traceable case to `examples/`. Dataset-derived media requires a separate data
+notice. Any new third-party-derived code must include a provenance review
+before publication.

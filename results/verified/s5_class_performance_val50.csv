@@ -1,0 +1,5 @@
+scenario_type,n_gt_logs,f1
+lead_brake,4,0.89
+obj_crossing,6,0.80
+cut_in,10,0.71
+approach_stop,5,0.33

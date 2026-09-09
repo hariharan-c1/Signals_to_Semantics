@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "status": "Supporting trace-integrity audit; not a headline performance result",
   "split": "val50",
   "evidence_files_expected": 56,
   "evidence_files_present": 56,

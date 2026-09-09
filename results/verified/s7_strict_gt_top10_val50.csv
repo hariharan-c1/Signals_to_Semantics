@@ -1,0 +1,6 @@
+scenario_type,n_gt,p_at_10,r_at_10
+cut_in,10,0.40,0.40
+approach_stop,5,0.20,0.20
+obj_crossing,6,0.42,0.63
+lead_brake,4,0.28,0.69
+ped_crossing,1,0.20,1.00

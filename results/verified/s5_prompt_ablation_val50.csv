@@ -1,0 +1,5 @@
+prompt_strategy,model_label,n_gt_logs,representative_windows_per_log,accuracy,macro_f1,selected
+Base Prompt,gpt-5-chat,25,1,0.760,0.621,true
+CoT,gpt-5-chat,25,1,0.560,0.484,false
+CP,gpt-5-chat,25,1,0.680,0.397,false
+ALLINONE,gpt-5-chat,25,1,0.520,0.263,false

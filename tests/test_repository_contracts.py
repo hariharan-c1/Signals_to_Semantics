@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 import re
 import unittest
@@ -70,6 +71,16 @@ class RepositoryContractTests(unittest.TestCase):
         paths = [
             ROOT / "examples" / "evidence" / "synthetic_window.json",
             ROOT / "examples" / "llm_output" / "synthetic_window.llm.json",
+            ROOT / "examples" / "hero_scenario" / "manifest.json",
+            ROOT / "examples" / "hero_scenario" / "s0_candidate_window.json",
+            ROOT / "examples" / "hero_scenario" / "s1_verification.json",
+            ROOT / "examples" / "hero_scenario" / "s2_representation_summary.json",
+            ROOT / "examples" / "hero_scenario" / "s3_actor_ranking.json",
+            ROOT / "examples" / "hero_scenario" / "s4_evidence_pack.json",
+            ROOT / "examples" / "hero_scenario" / "s5_llm_output.json",
+            ROOT / "examples" / "hero_scenario" / "human_validation.json",
+            ROOT / "examples" / "hero_scenario" / "s7_retrieval_trace.json",
+            ROOT / "results" / "verified" / "final_defense_metrics.json",
             ROOT / "results" / "verified" / "s1_s3_val50.json",
             ROOT / "results" / "verified" / "s6_integrity_val50.json",
             ROOT / "schemas" / "evidence.schema.json",
@@ -89,45 +100,102 @@ class RepositoryContractTests(unittest.TestCase):
                 self.assertIn("<<<SCENARIO_YAML>>>", text)
                 self.assertIsNone(UUID.search(text))
 
-    def test_verified_scoreboard_optima(self):
-        scoreboard = ROOT / "results" / "verified" / "s6_backend_scoreboard_val50.csv"
+    def test_final_defense_metric_contract(self):
+        path = ROOT / "results" / "verified" / "final_defense_metrics.json"
+        metrics = json.loads(path.read_text())
+        held_out = metrics["held_out_evaluation"]
+
+        self.assertEqual(held_out["split"], "val50")
+        self.assertEqual(held_out["logs"], 50)
+        self.assertEqual(held_out["s1"]["retained_windows"], 56)
+        self.assertEqual(held_out["s1"]["gt_aligned_windows"], 26)
+        self.assertEqual(
+            held_out["s1"]["unlabelled_candidate_discoveries"],
+            30,
+        )
+        self.assertEqual(held_out["s3"]["rank_1"]["count"], 23)
+        self.assertEqual(held_out["s3"]["within_rank_3"]["count"], 26)
+        self.assertEqual(held_out["s5"]["evaluation_logs"], 25)
+        self.assertAlmostEqual(held_out["s5"]["accuracy"], 0.760)
+        self.assertAlmostEqual(held_out["s5"]["macro_f1"], 0.621)
+
+    def test_final_s5_prompt_ablation(self):
+        scoreboard = ROOT / "results" / "verified" / "s5_prompt_ablation_val50.csv"
         with scoreboard.open(newline="") as handle:
             rows = list(csv.DictReader(handle))
 
-        self.assertEqual(len(rows), 12)
-        best_accuracy = max(rows, key=lambda row: float(row["accuracy_canonical_gt"]))
-        best_macro_f1 = max(rows, key=lambda row: float(row["macro_f1_canonical_gt"]))
-        self.assertEqual(best_accuracy["prompt_type"], "base_prompt")
-        self.assertEqual(best_accuracy["model_name"], "gpt-5-chat")
-        self.assertAlmostEqual(
-            float(best_accuracy["accuracy_canonical_gt"]),
-            0.576923,
-            places=6,
-        )
-        self.assertEqual(best_macro_f1["prompt_type"], "CoT")
-        self.assertEqual(best_macro_f1["model_name"], "ollama_gpt-oss")
-        self.assertAlmostEqual(
-            float(best_macro_f1["macro_f1_canonical_gt"]),
-            0.601270,
-            places=6,
-        )
+        self.assertEqual(len(rows), 4)
+        selected = [row for row in rows if row["selected"] == "true"]
+        self.assertEqual(len(selected), 1)
+        self.assertEqual(selected[0]["prompt_strategy"], "Base Prompt")
+        self.assertEqual(selected[0]["model_label"], "gpt-5-chat")
+        self.assertEqual(int(selected[0]["n_gt_logs"]), 25)
+        self.assertAlmostEqual(float(selected[0]["accuracy"]), 0.760)
+        self.assertAlmostEqual(float(selected[0]["macro_f1"]), 0.621)
 
-    def test_verified_retrieval_k10(self):
-        metrics = ROOT / "results" / "verified" / "s7_macro_micro_val50.csv"
+    def test_final_s7_strict_gt_top10(self):
+        metrics = ROOT / "results" / "verified" / "s7_strict_gt_top10_val50.csv"
         with metrics.open(newline="") as handle:
-            rows = {int(row["K"]): row for row in csv.DictReader(handle)}
+            rows = {row["scenario_type"]: row for row in csv.DictReader(handle)}
 
-        self.assertEqual(set(rows), {1, 3, 5, 10})
-        self.assertAlmostEqual(
-            float(rows[10]["macro_gt_precision_mean_over_queries"]),
-            0.266667,
-            places=6,
+        self.assertEqual(
+            set(rows),
+            {"cut_in", "approach_stop", "obj_crossing", "lead_brake", "ped_crossing"},
         )
-        self.assertAlmostEqual(
-            float(rows[10]["macro_gt_coverage_mean_over_queries"]),
-            0.465625,
-            places=6,
+        self.assertAlmostEqual(float(rows["obj_crossing"]["p_at_10"]), 0.42)
+        self.assertAlmostEqual(float(rows["obj_crossing"]["r_at_10"]), 0.63)
+        self.assertAlmostEqual(float(rows["ped_crossing"]["r_at_10"]), 1.00)
+
+    def test_hero_scenario_trace(self):
+        hero = ROOT / "examples" / "hero_scenario"
+        s0 = json.loads((hero / "s0_candidate_window.json").read_text())
+        s1 = json.loads((hero / "s1_verification.json").read_text())
+        s2 = json.loads((hero / "s2_representation_summary.json").read_text())
+        s3 = json.loads((hero / "s3_actor_ranking.json").read_text())
+        s4 = json.loads((hero / "s4_evidence_pack.json").read_text())
+        s5 = json.loads((hero / "s5_llm_output.json").read_text())
+        human = json.loads((hero / "human_validation.json").read_text())
+        s7 = json.loads((hero / "s7_retrieval_trace.json").read_text())
+
+        key = s1["window_key"]
+        self.assertEqual(s0["log_id"], key.split("|", 1)[0])
+        self.assertEqual(s3["window_key"], key)
+        self.assertEqual(s4["window_key"], key)
+        self.assertEqual(s5["parsed_result"]["ego_window_key"], key)
+        self.assertEqual(human["window_key"], key)
+        self.assertEqual(s7["canonical_source_window_key"], key)
+        self.assertEqual(s7["database_timestamp_precision_decimals"], 6)
+        expected_database_key = "|".join(
+            [
+                s0["log_id"],
+                f'{s0["t_start"]:.6f}',
+                f'{s0["t_end"]:.6f}',
+            ]
         )
+        self.assertEqual(s7["matched_database_window_key"], expected_database_key)
+        self.assertEqual(s0["duration_s"], 2.25)
+        self.assertAlmostEqual(s1["scores"]["hmm_posterior"], 0.9986784334)
+        self.assertEqual(s2["candidate_actors_within_60m"], 9)
+        self.assertEqual(s2["learned_embedding_dimensions"], 128)
+        self.assertEqual(s3["actors"][0]["alias"], "ACTOR1")
+        self.assertAlmostEqual(s3["actors"][0]["score"], 1.0447728634)
+        self.assertEqual(s5["parsed_result"]["scenario_classification"], "obj_crossing")
+        self.assertEqual(s5["parsed_result"]["primary_responsible_actor"], "ACTOR1")
+        self.assertAlmostEqual(s5["parsed_result"]["confidence_score"], 0.83)
+        self.assertEqual(human["scenario_label"], "cut_in")
+        self.assertEqual(human["primary_trigger"], "ACTOR1")
+        self.assertEqual(s7["rank"], 3)
+        self.assertAlmostEqual(s7["hybrid_score"], 0.7242108767)
+
+    def test_hero_manifest_checksums(self):
+        hero = ROOT / "examples" / "hero_scenario"
+        manifest = json.loads((hero / "manifest.json").read_text())
+        for artifact in manifest["published_files"]:
+            path = hero / artifact["path"]
+            with self.subTest(path=path):
+                self.assertTrue(path.is_file())
+                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                self.assertEqual(digest, artifact["sha256"])
 
     def test_relative_markdown_links_exist(self):
         for path in sorted(ROOT.rglob("*.md")):

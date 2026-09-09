@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "case_id": "hero-val50-crossing-vehicle",
+  "authoritative_presentation_slide": 29,
+  "canonical_window": {
+    "log_id": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e",
+    "t_start": 315968692.3874254,
+    "t_end": 315968694.6374254,
+    "window_key": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e|315968692.3874254|315968694.6374254"
+  },
+  "published_files": [
+    {
+      "path": "s0_candidate_window.json",
+      "sha256": "4d0e8cf853af37dd8d2f276c11750e0594439bc78036f08bd20cf18455338559",
+      "curation": "Exact record extracted from the final Val50 candidate-window JSONL and renamed for portability."
+    },
+    {
+      "path": "s1_verification.json",
+      "sha256": "a997a42a17d8d7cd8582a400cddc69fb9f96749e694da5b62d9dad63237f68ec",
+      "curation": "Exact stage scores joined from the final PU-XGBoost, nnPU, fusion, EMA, and HMM outputs."
+    },
+    {
+      "path": "s2_representation_summary.json",
+      "sha256": "457ae66270e9b6218f61d94365352aa6916e1746a542b6b868332d6e47679341",
+      "curation": "Compact summary of the final actor index and learned embeddings; raw vectors omitted."
+    },
+    {
+      "path": "s3_actor_ranking.json",
+      "sha256": "9e177aa6b4ff71b9941c73787b75227c2a15ec23f8a681e1fdea9ede8193fa4b",
+      "curation": "Exact rows extracted from the final v9_f0_mean Top-3 Parquet."
+    },
+    {
+      "path": "s4_evidence_pack.json",
+      "sha256": "73c45ce88976cdd2ece16b35d4324324f873c6232ad8613760237730c695ee19",
+      "curation": "Byte-identical copy of the final evidence packet with a portable filename."
+    },
+    {
+      "path": "s5_llm_output.json",
+      "sha256": "7845e44f135b036d26520cb08c61747f7cc1e248b450c57fa10a5c77cf3192fe",
+      "curation": "Byte-identical copy of the selected Base Prompt response with a portable filename."
+    },
+    {
+      "path": "human_validation.json",
+      "sha256": "b15bcc76269e862819ec110bd3cb3fd90d903f0f552cd8b13a6bfbbfd9fd464e",
+      "curation": "Selected review fields preserved; session identifier, timestamp, local paths, and redundant actor text removed."
+    },
+    {
+      "path": "s7_retrieval_trace.json",
+      "sha256": "ff741baf1211f50c81dd0b94b65afaa055d98eb29b95ed9fe250d0c49ebdbb4e",
+      "curation": "Exact query and matched-result values extracted from final retrieval run 18, with the source and six-decimal database window keys named explicitly."
+    },
+    {
+      "path": "media/scenario_poster.jpg",
+      "sha256": "5b8b08553cf5277f9f490edbe523a8f15b94a589d1dc22c61c96fced4431ef45",
+      "curation": "Representative frame extracted for GitHub preview."
+    },
+    {
+      "path": "media/scenario_clip.mp4",
+      "sha256": "0d9138fcb6de9a4742b5eb9e913307a997aa7eabec4b4795604cc50b48860ca8",
+      "curation": "Original presentation clip compressed from 4000x2000 MPEG-4 to 1280x640 H.264; duration preserved at 3.9 seconds."
+    }
+  ],
+  "source_artifact_sha256": {
+    "val50_candidate_windows_jsonl": "206aba894c8804a78c9311bd3b250affdb2c64cf36f66c8be9285e4cb543683c",
+    "val50_pu_xgboost_scores_jsonl": "27e98fb57ad2b027f38ed9d420e2977904bedf9b5d3aa9bed52e870a1ac65e3f",
+    "val50_nnpu_scores_jsonl": "6c20fb863cdfcff8150483512df308ca1fac348f1e4c01766f8c578186c0c546",
+    "val50_hmm_scores_jsonl": "fa1b33f0fb503093e4a3dfae6d91d5e04419ded0ea610c88eaeb5d83ba541b36",
+    "s2_embeddings_train_parquet": "7418faad1271584e8a6fe6017d310e6684e53e4a50a9a201ba24f295cc21999c",
+    "s3_v9_f0_mean_top3_parquet": "9cea015d0f6d55ec612222e4711e43b9dc0edfdbd337ecde16224ba66c4c7e8e",
+    "s4_evidence_json": "73c45ce88976cdd2ece16b35d4324324f873c6232ad8613760237730c695ee19",
+    "s5_selected_output_json": "7845e44f135b036d26520cb08c61747f7cc1e248b450c57fa10a5c77cf3192fe",
+    "human_validation_jsonl": "3ade22094d168653d1601b46f893fb30be66377d7e0f7954c3a5359021228f14",
+    "s7_retrieval_run_18_json": "ce082e3e5de6aa1a984a2b449a699efe20a927658d9e8eafc57b89a3da51f553",
+    "presentation_embedded_clip_mp4": "4ab6b8aa23e3082c985c3ace6bee34775aa76672ffadc9be2df3901666bd95c4"
+  },
+  "data_terms": "See media/DATA_LICENSE.md and the repository NOTICE.md."
+}

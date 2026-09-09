@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "split": "val50",
+  "query": "ego braking due to vehicle crossing in front",
+  "method": "HNSW approximate-nearest-neighbor search with confidence-aware reranking",
+  "top_k": 10,
+  "embedding_model": "embeddinggemma:latest",
+  "embedding_dimensions": 768,
+  "rerank_weights": {
+    "cosine_similarity": 1.0,
+    "llm_confidence": 0.1,
+    "s1_confidence": 0.1
+  },
+  "canonical_source_window_key": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e|315968692.3874254|315968694.6374254",
+  "matched_database_window_key": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e|315968692.387425|315968694.637425",
+  "database_timestamp_precision_decimals": 6,
+  "rank": 3,
+  "cosine_similarity": 0.5413430333137512,
+  "llm_confidence": 0.83,
+  "s1_confidence": 0.9986784334000001,
+  "hybrid_score": 0.7242108766537512,
+  "latency_ms_for_full_top10_query": 18,
+  "interpretation": "The natural-language query retrieved the observed scenario at rank 3 while preserving its canonical event trace."
+}

@@ -13,35 +13,48 @@ structured evidence, asks an LLM to explain the event, and stores the result
 for semantic retrieval.
 
 The repository contains source code, reproducible split manifests, sanitized
-configuration templates, synthetic examples, schemas, and compact verified
-results. It intentionally does **not** contain raw Argoverse 2 data, credentials,
-model checkpoints, database dumps, or bulk generated artifacts.
+configuration templates, schemas, compact final results, and one real
+end-to-end traceability case study. It intentionally does **not** contain raw
+Argoverse 2 data, credentials, model checkpoints, database dumps, or bulk
+generated artifacts.
+
+## See one scenario end to end
+
+[![Real held-out scenario with BEV and front-center camera](examples/hero_scenario/media/scenario_poster.jpg)](examples/hero_scenario/README.md)
+
+A real 2.25-second braking interaction from the held-out `val50` split is
+traced through physical detection, event verification, actor representation,
+GAT ranking, evidence construction, LLM interpretation, human review, and
+semantic retrieval.
+
+[Open the complete scenario trace](examples/hero_scenario/README.md) or
+[watch the 3.9-second clip](examples/hero_scenario/media/scenario_clip.mp4).
 
 ## Pipeline
 
 ```mermaid
 flowchart TD
-    S0["S0: Signal detection and actor features"]
-    S1["S1: PU verification and HMM smoothing"]
-    S2["S2: Contrastive actor embeddings"]
-    S3["S3: GAT actor ranking"]
-    S4["S4: Structured evidence packets"]
-    S5["S5: LLM reasoning"]
-    S6["S6: Scenario database and evaluation"]
-    S7["S7: Semantic retrieval"]
+    S0["S0: Signal preparation"]
+    S1["S1: Braking-event localization"]
+    S2["S2: Actor representation"]
+    S3["S3: Actor prioritization"]
+    S4["S4: Evidence construction"]
+    S5["S5: Semantic reasoning"]
+    S6["S6: Scenario knowledge base"]
+    S7["S7: Retrieval and reranking"]
     S0 --> S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7
 ```
 
 | Stage | Purpose | Main output |
 |---|---|---|
-| S0 | Detect candidate braking windows and derive ego-relative actor features | JSONL windows and actor-feature Parquet |
-| S1 | Verify candidates using PU-XGBoost and nnPU, then fuse and smooth scores with an HMM | Final event scores and episodes |
-| S2 | Learn contrastive actor representations | Per-actor embeddings |
-| S3 | Build quasi-temporal graphs and rank actors with a GAT | Top-k responsible-actor candidates |
-| S4 | Combine event, actor, map, and ranking evidence | One JSON evidence packet per window |
-| S5 | Classify and explain scenarios with Azure OpenAI or local Ollama models | Structured LLM JSON |
-| S6 | Ingest the trace into PostgreSQL and evaluate reasoning outputs | Relational scenario trace and scoreboards |
-| S7 | Embed and retrieve similar scenarios using natural-language queries | Ranked retrieval results |
+| S0 | Resample and smooth ego motion; derive velocity, acceleration, and jerk | Conditioned kinematic signals |
+| S1 | Propose braking windows, verify them with PU-XGBoost and nnPU, then stabilize them with an HMM | Canonical event windows and confidence scores |
+| S2 | Build 37-dimensional actor descriptors and learn contrastive representations | 128-dimensional actor embeddings |
+| S3 | Build quasi-temporal graphs and rank actors with a GAT | Top-3 responsible-actor hypotheses |
+| S4 | Freeze event, actor, map, and ranking evidence | One deterministic JSON evidence packet per window |
+| S5 | Classify and explain scenarios within a closed taxonomy and actor set | Structured semantic scenario record |
+| S6 | Persist the complete trace in PostgreSQL and pgvector | Reproducible scenario knowledge base |
+| S7 | Retrieve by semantic intent and optionally rerank with confidence evidence | Ranked traceable scenarios |
 
 The thesis-stable S1 sequence uses HMM smoothing. Experimental HSMM work and
 other follow-up variants are outside this release.
@@ -64,18 +77,20 @@ other follow-up variants are outside this release.
 Python, NumPy, pandas, SciPy, XGBoost, PyTorch, PyTorch Geometric, Argoverse 2,
 Azure OpenAI, Ollama, PostgreSQL, pgvector, SQLAlchemy, and scikit-learn.
 
-## Verified thesis results
+## Final thesis results
 
-These values come from the held-out `val50` manifest and the evaluation
-contracts documented in [docs/RESULTS.md](docs/RESULTS.md).
+These are the final values presented in the Master's thesis defense. The
+different stages use the evaluation units shown below; they should not be
+collapsed into one overall accuracy. Full definitions and class-wise results
+are documented in [docs/RESULTS.md](docs/RESULTS.md).
 
-| Component | Verified result |
+| Component | Final result |
 |---|---|
-| S1 event output | 56 predicted windows; 26 distinct GT-aligned windows; 30 unmatched candidate discoveries; GT-event recall 1.000 |
-| S3 actor ranking | Hit@1 0.893; Recall@3 1.000; MRR 0.935; pairwise accuracy 0.911 |
-| S5 reasoning | Best canonical GT accuracy 0.577; best canonical macro-F1 0.601 across the evaluated prompt/backend combinations |
-| S6 trace integrity | 56/56 evidence files ingested; 671 LLM predictions; 0 invalid JSON files; 530/530 non-null primary-actor references mapped |
-| S7 retrieval | Macro GT precision@10 0.267 and macro GT coverage@10 0.466 across four supported labels |
+| S1 event localization | 56/56 Val50 windows retained; all 26 GT-aligned events preserved; 30 unlabelled candidate discoveries; GT recall 1.000 |
+| S3 actor ranking | 23/26 responsible actors at Rank 1; 24/26 within Top-2; 26/26 within Top-3 |
+| S5 semantic reasoning | Base Prompt with `gpt-5-chat`, evaluated on one representative window from each of 25 GT logs: accuracy 0.760; macro-F1 0.621 |
+| S7 semantic retrieval | Strict GT-only Top-10 evaluation across five scenario classes; P@10 ranges from 0.20 to 0.42 and R@10 from 0.20 to 1.00 |
+| Closest-baseline comparison | Actor precision 0.37 to 0.893; semantic F1 0.52 to 0.621; R@50 improved in all three reported OOD categories |
 
 “Candidate discovery” means a predicted window did not overlap the available
 ground-truth event set. It is not, by itself, proof that the event is a novel
@@ -179,7 +194,8 @@ machine-specific-path patterns.
 | `signals_to_semantics/` | Reusable detection, AV2 loading, tagging, and identifier utilities |
 | `scripts/s0` to `scripts/s7` | Stage-oriented research pipeline |
 | `configs/` | Sanitized templates, schemas, thresholds, and fixed split manifests |
-| `examples/` | Fully synthetic S4 and S5 examples |
+| `examples/hero_scenario/` | Real S0–S7 trace, human-review result, poster, and short clip |
+| `examples/evidence/`, `examples/llm_output/` | Synthetic schema-validation examples |
 | `schemas/` | JSON Schemas for evidence and LLM output |
 | `results/verified/` | Small, inspectable evaluation summaries only |
 | `docs/` | Pipeline, scope, provenance, results, and reproducibility notes |
@@ -189,8 +205,10 @@ machine-specific-path patterns.
 This is an offline research pipeline, not a real-time driving or safety
 system. The reported results are tied to the published AV2 split and the
 documented evaluation contracts. They do not establish formal causality,
-production safety, or cross-domain generalization. LLM output may vary with
-model revisions and serving configuration.
+production safety, or cross-domain generalization. The human-reviewed case
+also shows a semantic boundary error: S5 returned `obj_crossing`, while the
+reviewer selected the narrower `cut_in` label. LLM output may vary with model
+revisions and serving configuration.
 
 ## Data, licensing, and provenance
 

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "window_key": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e|315968692.3874254|315968694.6374254",
+  "model_configuration": "v9_f0_mean",
+  "actors": [
+    {
+      "alias": "ACTOR1",
+      "rank": 1,
+      "track_uuid": "c22933da-fa65-45f3-917c-bdb681616a54",
+      "score": 1.0447728633880615
+    },
+    {
+      "alias": "ACTOR2",
+      "rank": 2,
+      "track_uuid": "447684bc-11da-4e30-84ab-a6f61c623ac5",
+      "score": 0.4579574167728424
+    },
+    {
+      "alias": "ACTOR3",
+      "rank": 3,
+      "track_uuid": "59cf44e4-4133-4af4-9d16-84e8a4f350cb",
+      "score": 0.37247011065483093
+    }
+  ],
+  "interpretation": "The quasi-temporal GAT prioritized ACTOR1, the vehicle later accepted by human review as the primary trigger."
+}

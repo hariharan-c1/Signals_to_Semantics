@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "window_key": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e|315968692.3874254|315968694.6374254",
+  "candidate_actors_within_60m": 9,
+  "actor_descriptor_dimensions": 37,
+  "learned_embedding_dimensions": 128,
+  "embedding_normalization": "L2",
+  "top3_actor_embedding_norms": {
+    "ACTOR1": 0.9999999403953552,
+    "ACTOR2": 1.0,
+    "ACTOR3": 1.0
+  },
+  "top3_actor_embedding_sha256": {
+    "ACTOR1": "d758001ab2ec540473a46069ae33a95d6d1c26e8470feebc64742552c259c593e",
+    "ACTOR2": "3d36cd991b08699e6169443ea3a05d905f3fdd113721c259c91633f8c21999c",
+    "ACTOR3": "bb1bbb2f22dc34aa5479ac2b1f408f02ae57ff5e2771fdf53eb53df2f835c069"
+  },
+  "embedding_hash_encoding": "SHA-256 of the 128 float32 values in emb_000 to emb_127 column order",
+  "vectors_included": false,
+  "interpretation": "The learned vectors are represented by dimensions, norms, and hashes because dumping 128 floating-point values per actor would add little value to a code review."
+}

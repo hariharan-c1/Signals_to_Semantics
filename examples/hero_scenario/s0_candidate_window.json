@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "split": "val50",
+  "log_id": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e",
+  "i_start": 168,
+  "i_end": 213,
+  "t_start": 315968692.3874254,
+  "t_end": 315968694.6374254,
+  "duration_s": 2.25,
+  "minimum_acceleration_mps2": -3.7921764580395205,
+  "minimum_jerk_mps3": -13.609278458847093,
+  "interpretation": "The recall-first detector proposed this 2.25-second braking interval from conditioned ego-motion signals."
+}

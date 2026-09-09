@@ -4,18 +4,20 @@
 
 This repository provides the code path, split manifests, thresholds, feature
 schema, prompt variants, configuration templates, evaluation scripts, and
-compact verified summaries needed to inspect and rerun the thesis pipeline.
+compact final summaries needed to inspect and rerun the thesis pipeline.
 
 It does not include:
 
 - raw Argoverse 2 data;
-- generated Parquet, JSONL, media, or database artifacts;
+- bulk generated Parquet, JSONL, media, or database artifacts;
 - trained model checkpoints;
-- commercial LLM responses beyond aggregate metrics;
+- the full commercial LLM response corpus;
 - credentials or machine-specific paths.
 
 Those omissions keep the repository publishable and small, but a complete
-rerun requires regenerating intermediate artifacts.
+rerun requires regenerating intermediate artifacts. One compact, real
+traceability case is retained under `examples/hero_scenario/` so the published
+stage contracts can be inspected without a full rerun.
 
 ## Reference protocol
 
@@ -119,16 +121,17 @@ Database passwords belong only in the ignored `configs/db.env` file.
 
 ## Evaluation boundaries
 
-Metrics in `results/verified/` use different denominators and contracts. Do not
-combine them into a single percentage. In particular:
+Metrics in `results/verified/` reproduce the final defense presentation and
+use different denominators and contracts. Do not combine them into a single
+percentage. In particular:
 
 - an unmatched S1 prediction is a candidate discovery, not automatically a
   confirmed novel scenario;
-- S3 reports both annotated-instance counts and distinct predicted-window
-  counts;
-- the best S5 accuracy and best S5 macro-F1 come from different
-  prompt/backend configurations;
-- S7 macro metrics average across supported query labels.
+- S3 reports rank placement on 26 distinct GT-aligned windows;
+- S5 uses one deterministic representative window from each of 25 GT logs;
+- S7 reports class-wise strict GT-only retrieval at `K=10`;
+- the S1, S3, S5, and S7 precision/recall values in the cross-stage figure are
+  stage-specific proxies, not points on one threshold-swept curve.
 
 The released evidence supports offline scenario mining and reasoning on the
 documented split. It does not prove causal attribution, real-time safety, or
