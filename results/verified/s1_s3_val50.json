@@ -1,25 +1,37 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "source": "Final Master's thesis defense presentation, slides 13 and 15",
   "split": "val50",
-  "s1_event_discovery": {
-    "predicted_windows": 56,
-    "distinct_gt_aligned_predicted_windows": 26,
-    "unmatched_predicted_windows": 30,
-    "candidate_discoveries": 30,
+  "s1_event_localization": {
+    "logs": 50,
+    "detected_windows": 56,
+    "scored_windows": 56,
+    "retained_windows": 56,
+    "hard_rejected_windows": 0,
+    "gt_aligned_windows": 26,
+    "unlabelled_candidate_discoveries": 30,
     "gt_event_recall": 1.0,
-    "candidate_discovery_definition": "A predicted window without an overlap in the available ground-truth event set; separate review is required."
+    "median_onset_latency_s": 0.0,
+    "median_temporal_iou": 1.0,
+    "mean_fragmentation": 1.0
   },
   "s3_actor_ranking": {
-    "annotated_evaluation_instances": 28,
-    "distinct_predicted_windows": 26,
-    "hit_at_1": 0.892857,
+    "gt_aligned_windows": 26,
+    "rank_1_windows": 23,
+    "rank_2_windows": 1,
+    "rank_3_windows": 2,
+    "misses_beyond_rank_3": 0,
+    "top_1_rate": 0.8846153846153846,
+    "top_2_rate": 0.9230769230769231,
     "recall_at_3": 1.0,
-    "average_rank": 1.178571,
-    "mean_reciprocal_rank": 0.934524,
-    "pairwise_accuracy": 0.910714
+    "teacher_ndcg_at_3_gt_aligned": 0.874,
+    "teacher_ndcg_at_3_unlabelled": 0.883,
+    "precision_proxy_in_cross_stage_comparison": 0.893
   },
   "notes": [
-    "Annotated-instance and distinct-window counts are reported separately.",
-    "These results do not establish formal causal responsibility."
+    "The held-out ranking denominator is 26 distinct GT-aligned windows.",
+    "The 0.893 precision proxy is the stage-level operating point used in the baseline and cross-stage figures; it must not be relabeled as 23 divided by 26.",
+    "Unlabelled candidate discoveries require separate human review.",
+    "Actor ranking provides responsibility hypotheses, not formal causal proof."
   ]
 }

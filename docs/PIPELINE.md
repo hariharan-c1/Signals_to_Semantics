@@ -3,6 +3,12 @@
 This document describes how information moves from Argoverse 2 motion signals
 to a searchable scenario trace. Run commands from the repository root.
 
+Stage names follow the final thesis defense. A few implementation filenames
+predate that presentation boundary: `scripts/s0/detect_braking_windows.py`
+contains both S0 signal conditioning and the S1A physics-based candidate
+proposal. The `scripts/s1_verifier/` directory implements S1B verification and
+S1C temporal stabilization.
+
 ## Shared conventions
 
 - Local dataset paths live in `configs/paths.yaml`, which is ignored by Git.
@@ -17,16 +23,16 @@ to a searchable scenario trace. Run commands from the repository root.
 
 | Stage | Required inputs | Principal outputs | Validation |
 |---|---|---|---|
-| S0 | AV2 Sensor logs, thresholds, tagging configuration | Candidate-window JSONL, tagged actors, actor-feature Parquet | `validate_features.py` |
-| S1 | Window features and labels | PU-XGB scores, nnPU scores, HMM-smoothed scores, finalized episodes | Calibration and summary files produced by S1 scripts |
-| S2 | S1-kept windows and actor features | Actor index, contrastive tensors, 128-dimensional embeddings | `s2_validate_actor_index.py` and nearest-neighbor recall |
-| S3 | Actor index, embeddings, S1 episodes, labels | Slices, graph files, soft teacher targets, GAT top-k ranking | S3 validation and evaluation scripts |
+| S0 | AV2 Sensor logs and signal thresholds | Conditioned ego kinematics | Candidate and feature validators |
+| S1 | Conditioned signals, window features, and weak labels | Candidate windows, PU scores, HMM-smoothed scores, and canonical episodes | Calibration and summary files produced by S1 scripts |
+| S2 | S1-retained windows and actor features | Actor index, contrastive tensors, and 128-dimensional embeddings | `s2_validate_actor_index.py` and nearest-neighbor recall |
+| S3 | Actor index, embeddings, S1 episodes, and sparse labels | Slices, graph files, soft teacher targets, and GAT Top-3 ranking | S3 validation and evaluation scripts |
 | S4 | S1 final scores, S3 top-k, actor features | Evidence JSON files and a manifest | `s4_2_validate_llm_input.py` |
 | S5 | S4 evidence and a prompt template | Per-window LLM output JSON | `s5_validate_outputs.py` and `s5_evaluate_reasoning.py` |
 | S6 | S0 to S5 artifacts plus PostgreSQL | Normalized scenario trace, embeddings, integrity and evaluation reports | `s6i_sanity_checks.py` and `s6_eval_all.py` |
 | S7 | S6 scenario trace and text embeddings | Ranked retrieval results and aggregate metrics | `s7c_evaluate_retrieval.py` |
 
-## S0: candidate detection and actor features
+## S0 and S1A: signal preparation and candidate proposal
 
 Prepare the local data configuration:
 
@@ -42,7 +48,7 @@ python scripts/s0/validate_splits.py \
   --train_root /absolute/path/to/argoverse2/sensor/train
 ```
 
-Detect, tag, and featurize one split:
+Condition the signals, propose candidates, tag actors, and featurize one split:
 
 ```bash
 python scripts/s0/detect_braking_windows.py \
@@ -70,7 +76,7 @@ python scripts/s0/validate_features.py \
 Repeat this step for development and training manifests as needed. The feature
 contract is documented in `configs/features/schema_v1.yaml`.
 
-## S1: event verification
+## S1B and S1C: event verification and temporal stabilization
 
 S1 uses two positive-unlabeled learners, followed by score fusion and HMM
 smoothing.
@@ -146,8 +152,9 @@ python scripts/s4/s4_2_validate_llm_input.py \
   --evidence-dir artifacts/train650_val50/val50/s4/val50
 ```
 
-A fully synthetic example is in
-`examples/evidence/synthetic_window.json`.
+A fully synthetic example is in `examples/evidence/synthetic_window.json`.
+A real held-out evidence packet and its complete stage trace are in
+`examples/hero_scenario/`.
 
 ## S5: LLM reasoning
 
@@ -220,7 +227,7 @@ python scripts/s7/s7c_evaluate_retrieval.py --config configs/s7_eval.yaml
 
 ## Artifact discipline
 
-Do not commit files produced by these commands. The source repository keeps
-only compact verified summaries. Record the Git commit, configuration, random
-seed, environment, model checkpoint checksum, and LLM deployment identifier
-for each experiment.
+Do not commit bulk files produced by these commands. The source repository
+keeps final summaries and one curated, licensed traceability case. Record the
+Git commit, configuration, random seed, environment, model checkpoint
+checksum, and LLM deployment identifier for each experiment.

@@ -23,7 +23,10 @@ If third-party-derived code is added later:
 
 The pipeline targets the Argoverse 2 Sensor dataset. Raw data is not included.
 The committed split manifests contain public log identifiers, and the compact
-result tables were derived from experiments on those logs.
+result tables were derived from experiments on those logs. The real
+traceability case under `examples/hero_scenario/` contains derived JSON output,
+a poster, and a compressed clip from one held-out log. Its media directory
+contains a separate AV2 data notice.
 
 Consult:
 
@@ -34,8 +37,11 @@ Consult:
 ## External model services
 
 S5 supports Azure OpenAI and local Ollama endpoints. The repository includes
-prompt text and aggregate results, not provider credentials. Archived model
-labels do not guarantee access to the same provider-side model snapshot.
+prompt text, aggregate results, and one selected structured response, but no
+provider credentials. The final evaluation calls the selected model
+`gpt-5-chat`; the selected raw response retains the archived provider hint
+`azure-gpt-5-mini`. These labels do not uniquely identify a provider-side
+model snapshot.
 
 ## Clean-release transformation
 
@@ -52,5 +58,7 @@ was applied without modifying the original archive:
 - replaced credential literals with environment-variable references;
 - added cross-platform evidence filenames, documentation, tests, schemas, and
   repository checks.
+- added one compact end-to-end case selected from the final defense
+  demonstration, with original-source checksums and a separate media notice.
 
 This document records the release's curation and attribution boundary.

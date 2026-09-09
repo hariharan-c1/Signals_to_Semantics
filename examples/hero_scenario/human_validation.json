@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "window_key": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e|315968692.3874254|315968694.6374254",
+  "scenario_status": "VALID",
+  "scenario_label": "cut_in",
+  "primary_trigger": "ACTOR1",
+  "primary_trigger_track_uuid": "c22933da-fa65-45f3-917c-bdb681616a54",
+  "primary_trigger_status": "VALID",
+  "primary_trigger_role": "cut_in_right",
+  "causality_assessment": "primary_trigger",
+  "overall_confidence": "High",
+  "actor2_status": "NOT-VALID",
+  "actor3_status": "NOT-VALID",
+  "evidence_summary": "A vehicle moved from the right into the ego path, coinciding with the ego braking response.",
+  "interpretation": "Human review agreed with the model about ACTOR1 but used the narrower label cut_in rather than obj_crossing."
+}

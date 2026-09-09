@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "window_key": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e|315968692.3874254|315968694.6374254",
+  "scores": {
+    "pu_xgboost": 0.9109998941,
+    "nnpu": 0.9999095201,
+    "fused": 0.9970355615,
+    "ema": 0.7988952471,
+    "hmm_posterior": 0.9986784334
+  },
+  "viterbi_state": 1,
+  "retained": true,
+  "interpretation": "The verifier retained the proposed interval and the HMM assigned a 0.998678 event posterior."
+}

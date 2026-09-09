@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "authoritative_source": {
+    "title": "LLM-Powered Novel Scenario Extraction and Reasoning in Autonomous Driving",
+    "artifact": "Final Master's thesis defense presentation",
+    "defense_date": "2026-09-03",
+    "status": "Final values confirmed by the thesis author and supervisor",
+    "result_slides": [13, 15, 17, 19, 20, 21, 29, 30]
+  },
+  "held_out_evaluation": {
+    "split": "val50",
+    "logs": 50,
+    "s1": {
+      "detected_windows": 56,
+      "retained_windows": 56,
+      "gt_aligned_windows": 26,
+      "unlabelled_candidate_discoveries": 30,
+      "gt_event_recall": 1.0,
+      "median_onset_latency_s": 0.0,
+      "median_temporal_iou": 1.0,
+      "mean_fragmentation": 1.0
+    },
+    "s3": {
+      "rank_1": {"count": 23, "denominator": 26, "rate": 0.8846153846153846},
+      "within_rank_2": {"count": 24, "denominator": 26, "rate": 0.9230769230769231},
+      "within_rank_3": {"count": 26, "denominator": 26, "rate": 1.0}
+    },
+    "s5": {
+      "evaluation_logs": 25,
+      "selection_policy": "One deterministic representative window per GT log",
+      "selected_prompt": "Base Prompt",
+      "selected_model_label": "gpt-5-chat",
+      "accuracy": 0.760,
+      "macro_f1": 0.621,
+      "macro_precision": 0.639,
+      "macro_recall": 0.633,
+      "dominant_confusion": {"ground_truth": "approach_stop", "prediction": "cut_in", "cases": 3}
+    },
+    "s7": {
+      "relevance": "Strict GT-only",
+      "k": 10,
+      "unlabelled_windows_count_as_true_positives": false,
+      "per_class_file": "s7_strict_gt_top10_val50.csv"
+    }
+  },
+  "development_scale_check": {
+    "split": "train650",
+    "s1_detected_windows": 688,
+    "s1_gt_overlap_windows": 263,
+    "s1_gt_recall": 1.0,
+    "s3_out_of_fold_file": "s3_train650_oof_by_class.csv"
+  },
+  "supporting_files": {
+    "s1_s3": "s1_s3_val50.json",
+    "s5_prompt_ablation": "s5_prompt_ablation_val50.csv",
+    "s5_class_performance": "s5_class_performance_val50.csv",
+    "s7_strict_retrieval": "s7_strict_gt_top10_val50.csv",
+    "baseline_comparison": "baseline_comparison.csv",
+    "stage_proxies": "stage_precision_recall_proxies.csv"
+  }
+}

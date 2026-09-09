@@ -1,0 +1,28 @@
+{
+  "backend": "azure-gpt-5-mini",
+  "raw_response_text": "Ego braking lasted about 2.2 s with a strong deceleration of ≈3.8 m/s² in an urban segment, without apparent intersection or stopline influence, so infrastructure-based braking is unlikely.  \nAmong the three tracked actors, **ACTOR1** is 11 m ahead, aligned with the ego lane, and carries a “crossing_like” trajectory hint. Its time‑to‑collision ≈ 4.8 s suggests a moderate approach, but its lateral speed ≈ 1.4 m/s and lateral_crossing hint indicate it is cutting laterally across the ego’s forward path from the right front.  \n**ACTOR2** and **ACTOR3** are both behind the ego (negative forward offsets), largely diverging or opposite‑heading, and therefore implausible as the braking cause.  \n\nThus, the episode is best classified as **obj_crossing**—a front‑right vehicle crosses the ego trajectory prompting braking.  \nConfidence is reasonably high because the actor lies on the ego path, moves laterally, and all map cues show no stopline/red‑light influence.\n\n```json\n{\n  \"actor_matrix\": [\n    {\n      \"actor_id\": \"ACTOR1\",\n      \"risk_score\": 85,\n      \"reasoning\": \"Ahead (~11 m), on ego path, lateral_crossing hint with closing motion; consistent with vehicle crossing ego path.\"\n    },\n    {\n      \"actor_id\": \"ACTOR2\",\n      \"risk_score\": 15,\n      \"reasoning\": \"Behind ego, opposite heading, TTC very small but diverging; improbable causal actor.\"\n    },\n    {\n      \"actor_id\": \"ACTOR3\",\n      \"risk_score\": 10,\n      \"reasoning\": \"Behind-left and diverging, no collision risk; not responsible for braking.\"\n    }\n  ],\n  \"primary_responsible_actor\": \"ACTOR1\",\n  \"scenario_classification\": \"obj_crossing\",\n  \"confidence_score\": 0.83,\n  \"final_rationale\": \"Front-right vehicle crossed ego’s lane, forcing the brake; no stopline or pedestrian involvement, matching an obj_crossing case.\",\n  \"ego_window_key\": \"768cf7e2-eb6c-3468-969e-e3b0fd87b34e|315968692.3874254|315968694.6374254\"\n}\n```",
+  "parsed_result": {
+    "actor_matrix": [
+      {
+        "actor_id": "ACTOR1",
+        "risk_score": 85,
+        "reasoning": "Ahead (~11 m), on ego path, lateral_crossing hint with closing motion; consistent with vehicle crossing ego path."
+      },
+      {
+        "actor_id": "ACTOR2",
+        "risk_score": 15,
+        "reasoning": "Behind ego, opposite heading, TTC very small but diverging; improbable causal actor."
+      },
+      {
+        "actor_id": "ACTOR3",
+        "risk_score": 10,
+        "reasoning": "Behind-left and diverging, no collision risk; not responsible for braking."
+      }
+    ],
+    "primary_responsible_actor": "ACTOR1",
+    "scenario_classification": "obj_crossing",
+    "confidence_score": 0.83,
+    "final_rationale": "Front-right vehicle crossed ego’s lane, forcing the brake; no stopline or pedestrian involvement, matching an obj_crossing case.",
+    "ego_window_key": "768cf7e2-eb6c-3468-969e-e3b0fd87b34e|315968692.3874254|315968694.6374254"
+  }
+}

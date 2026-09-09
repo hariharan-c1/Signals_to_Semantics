@@ -1,0 +1,5 @@
+stage,precision_proxy,recall_proxy
+S1,0.464,1.000
+S3,0.893,1.000
+S5,0.639,0.633
+S7,0.480,0.800
