@@ -66,7 +66,7 @@ viz = [
   "umap-learn>=0.5,<1",
 ]
 dev = [
-  "pytest>=8,<9",
+  "pytest>=8,<10",
 ]
 full = [
   "av2==0.3.5",
