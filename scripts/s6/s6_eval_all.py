@@ -736,7 +736,7 @@ def main():
         pred_norm = dfg["llm_label_canonical"].apply(lambda x: normalize_label(x, aliases))
         y_pred = [(p if (p is not None and p in canonical_labels) else "other") for p in pred_norm.tolist()]
 
-        # Ensure GT is in canonical; otherwise map to other (should not happen in your setup)
+        # Ensure GT is canonical; otherwise map to other (not expected here).
         y_true = [(t if t in canonical_labels else "other") for t in y_true]
 
         df_cm = confusion_matrix_counts(y_true, y_pred, canonical_labels)

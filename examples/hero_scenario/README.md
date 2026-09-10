@@ -8,6 +8,17 @@ presentation.
 
 Select the poster to open the 3.9-second MP4 clip.
 
+Validate the complete published trace without external services:
+
+```bash
+python -m pip install -e .
+sts demo
+```
+
+The verifier checks the ten artifact hashes, the shared canonical event ID,
+the S3 Top-3 ordering, S5 actor containment, human/model actor agreement, and
+the documented S7 hybrid-score calculation.
+
 ## One event, one trace
 
 | Stage | Question | Observed output |

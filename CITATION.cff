@@ -6,9 +6,12 @@ type: software
 authors:
   - family-names: Chandrasekaran
     given-names: Hariharan
+    email: hariharan.chandrasekaran25@gmail.com
 version: 0.1.0
 date-released: 2026-09-08
 license: MIT
+repository-code: "https://github.com/hariharan-c1/Signals_to_Semantics"
+url: "https://github.com/hariharan-c1/Signals_to_Semantics"
 keywords:
   - autonomous driving
   - scenario discovery

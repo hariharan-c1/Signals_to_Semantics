@@ -2,7 +2,7 @@
 """
 S7 Evaluation Suite (Production / Thesis-grade)
 
-Implements your agreed evaluation framing (Tier-1 + Tier-2) and adds
+Implements the released evaluation framing (Tier-1 + Tier-2) and adds
 APPENDIX-only "experimental" metrics behind a switch.
 
 Main (thesis-safe, conservative):

@@ -4,6 +4,10 @@ This page reproduces the final values presented in the Master's thesis
 defense on 3 September 2026. The author and thesis supervisor confirmed these
 as the authoritative results for this repository. The machine-readable ledger
 is [`final_defense_metrics.json`](../results/verified/final_defense_metrics.json).
+The [metric-provenance policy](METRIC_PROVENANCE.md) explains how final
+count-backed values supersede inconsistent legacy scalars.
+
+![Final held-out results dashboard](../assets/results_dashboard.png)
 
 ## Evaluation contracts
 
@@ -16,6 +20,8 @@ is [`final_defense_metrics.json`](../results/verified/final_defense_metrics.json
 
 These denominators answer different questions. Combining them into one
 overall pipeline accuracy would be misleading.
+
+![Held-out Val50 evaluation funnel](../assets/evaluation_funnel.png)
 
 ## S1 event localization
 
@@ -61,6 +67,10 @@ All Rank-1 misses remained in the Top-3 shortlist passed to semantic
 reasoning. Agreement with the physics teacher, reported as NDCG@3, was 0.874
 on GT-aligned windows and 0.883 on unlabelled candidates. Teacher agreement is
 supporting ranking evidence, not ground-truth accuracy.
+
+The approved Hit@1 value is the count-derived 23/26 = 88.5%. It is distinct
+from the separately defined 0.893 stage-level precision proxy retained in the
+thesis comparison material.
 
 Development-scale out-of-fold results are preserved in
 [`s3_train650_oof_by_class.csv`](../results/verified/s3_train650_oof_by_class.csv).
@@ -120,7 +130,7 @@ The [hero scenario](../examples/hero_scenario/README.md) demonstrates a text
 query that retrieved the same canonical event at Rank 3 with cosine similarity
 0.541343 and hybrid score 0.724211.
 
-## Comparison with *Why Braking?*
+## Comparison with [*Why Braking?*](https://arxiv.org/abs/2507.15874)
 
 ### Actor prioritization and semantic classification
 

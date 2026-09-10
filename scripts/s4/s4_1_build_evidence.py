@@ -119,7 +119,7 @@ def bucket_side(x_rel_m: float, y_rel_m: float, lat_offset_m: float) -> str:
     """
     Coarse ego-relative side bucket.
 
-    Sign convention in your data: y_rel_m < 0 => actor on ego's RIGHT.
+    Released sign convention: y_rel_m < 0 means actor on the ego's right.
     """
     y = to_float(y_rel_m)
     if pd.isna(y):
@@ -455,7 +455,7 @@ def primary_side_from_tags(tags: dict) -> str:
 def build_map_summary(actors_json: List[dict]) -> dict:
     """
     Aggregate map-derived features from actor rows into a window-level summary.
-    This is your 'map' field in the evidence JSON.
+    This becomes the `map` field in the evidence JSON.
     """
     if not actors_json:
         return {}

@@ -17,7 +17,9 @@ artifacts.
 | Examples | Synthetic schema examples plus one real S0–S7 traceability case |
 | Results | Final defense JSON and CSV summaries plus supporting integrity counts |
 | Media | One compressed scenario clip and poster with a separate AV2 data notice |
-| Project files | README, license, citation, CI, tests, and contributor guidance |
+| Figures | Regenerated architecture, evaluation-funnel, result-dashboard, and social-preview assets |
+| Demonstration | Offline verifier for the real trace and executable synthetic S0/S1A signal detection |
+| Project files | README, license, citation, CI, tests, dependency updates, and contributor guidance |
 
 ## Excluded
 

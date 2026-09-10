@@ -68,7 +68,7 @@ END $$;
 -- Notes:
 -- - We index embeddings for fast ANN search (cosine distance).
 -- - HNSW is great for interactive retrieval. (pgvector supports HNSW indexes.)
--- - If your pgvector build does not support hnsw, switch to ivfflat.
+-- - If the installed pgvector build does not support HNSW, switch to IVFFlat.
 -- - We also add btree indexes for common filters/joins.
 
 -- btree indexes (safe even if already present)
@@ -139,7 +139,7 @@ SELECT
   w.dur_s,
   w.detector_name,
 
-  -- Window scoring (S1) – keep only score_final (per your decision)
+  -- Window scoring (S1): retain only the final score.
   ws.score_final,
 
   -- Evidence (S4)

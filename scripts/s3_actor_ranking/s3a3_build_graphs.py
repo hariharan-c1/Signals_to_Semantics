@@ -8,7 +8,10 @@ import torch
 try:
     from torch_geometric.data import Data
 except Exception as e:
-    raise ImportError("PyG (torch_geometric) is required for S3-A3. Activate your PyG env.") from e
+    raise ImportError(
+        "PyG (torch_geometric) is required for S3-A3. "
+        "Install the project's machine-learning dependencies."
+    ) from e
 
 ID_KEYS = ["log_id","window_t_start","window_t_end","window_key","phase_idx","track_uuid"]
 

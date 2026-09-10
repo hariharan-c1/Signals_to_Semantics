@@ -188,7 +188,7 @@ def main():
     # deterministic order
     merged = merged.sort_values(key + ["r_rel_m","ttc_s","p_overlap"]).reset_index(drop=True)
 
-    # Ensure viterbi exists and is last column (mirrors your dev100 artifact)
+    # Ensure viterbi exists and is last (matching the released dev100 contract).
     if "viterbi" not in merged.columns:
         merged["viterbi"] = 0
     else:

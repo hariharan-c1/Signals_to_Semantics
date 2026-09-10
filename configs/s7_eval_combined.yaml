@@ -29,7 +29,7 @@ retrieval:
   oversample_factor: 10       # recommend >=10 when dedup != none
 
   # "none" is best for window-level recall (baseline-style)
-  # use "log_id" only with log-level recall denominators (not implemented here)
+  # "log_id" requires a separate log-level recall contract and is outside this release
   dedup_mode: "none"          # "none" | "window_key" | "log_id"
 
 eval:
