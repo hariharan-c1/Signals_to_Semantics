@@ -66,7 +66,7 @@ class MLPProj(nn.Module):
 
 def main():
     ap = argparse.ArgumentParser()
-    # Where your TRAIN650 contrastive artifacts live:
+    # Location of the Train650 contrastive artifacts:
     ap.add_argument("--train-contrastive-dir", required=True,
         help="Dir with TRAIN650 S2 contrastive artifacts (meta.json, model_contrastive.pt, meta_trained.json).")
     # VAL50 packed features (same schema as TRAIN650 contrastive_{train/val}.parquet):

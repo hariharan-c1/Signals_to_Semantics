@@ -60,9 +60,13 @@ change across platforms.
 These checks require no AV2 download:
 
 ```bash
-python scripts/maintenance/check_repository.py
-python -m unittest discover -s tests -v
+python -m pip install -e .
+make check
 ```
+
+The gate scans the publication tree, runs the test suite, validates the real
+trace, executes the synthetic detector demo, and checks generated-figure
+hashes against their verified source ledgers.
 
 After downloading AV2, verify the fixed manifests:
 
@@ -122,7 +126,8 @@ Database passwords belong only in the ignored `configs/db.env` file.
 ## Evaluation boundaries
 
 Metrics in `results/verified/` reproduce the final defense presentation and
-use different denominators and contracts. Do not combine them into a single
+use the [metric-provenance policy](METRIC_PROVENANCE.md). The stages have
+different denominators and contracts; do not combine them into a single
 percentage. In particular:
 
 - an unmatched S1 prediction is a candidate discovery, not automatically a

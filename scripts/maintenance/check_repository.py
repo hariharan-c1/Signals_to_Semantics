@@ -6,6 +6,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -93,6 +94,36 @@ def contains_possible_secret(path: Path, text: str) -> bool:
     return False
 
 
+def publication_files() -> list[Path]:
+    """Return tracked and publishable untracked files, excluding ignored files."""
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "ls-files",
+                "--cached",
+                "--others",
+                "--exclude-standard",
+                "-z",
+            ],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return [
+            path
+            for path in ROOT.rglob("*")
+            if path.is_file() and ".git" not in path.parts
+        ]
+
+    return [
+        ROOT / relative_path.decode("utf-8")
+        for relative_path in result.stdout.split(b"\0")
+        if relative_path
+    ]
+
+
 def check_tree() -> list[str]:
     errors: list[str] = []
 
@@ -100,9 +131,8 @@ def check_tree() -> list[str]:
         if not (ROOT / expected).is_file():
             errors.append(f"missing required file: {expected}")
 
-    for path in sorted(ROOT.rglob("*")):
-        if not path.is_file():
-            continue
+    files = publication_files()
+    for path in sorted(files):
 
         rel = relative(path)
         if "__pycache__" in path.parts:
@@ -158,7 +188,7 @@ def main() -> int:
             print(f"  - {error}")
         return 1
 
-    file_count = sum(1 for path in ROOT.rglob("*") if path.is_file())
+    file_count = len(publication_files())
     print(f"Repository check passed for {file_count} files.")
     return 0
 

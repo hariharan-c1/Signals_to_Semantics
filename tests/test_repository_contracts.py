@@ -197,6 +197,42 @@ class RepositoryContractTests(unittest.TestCase):
                 digest = hashlib.sha256(path.read_bytes()).hexdigest()
                 self.assertEqual(digest, artifact["sha256"])
 
+    def test_generated_figure_manifest(self):
+        manifest_path = ROOT / "assets" / "figures_manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        expected_outputs = {
+            "assets/architecture_overview.png",
+            "assets/architecture_overview.svg",
+            "assets/evaluation_funnel.png",
+            "assets/evaluation_funnel.svg",
+            "assets/results_dashboard.png",
+            "assets/results_dashboard.svg",
+            "assets/social_preview.png",
+        }
+        self.assertEqual(
+            {item["path"] for item in manifest["outputs"]},
+            expected_outputs,
+        )
+        self.assertIn("23/26", manifest["metric_policy"]["s3_hit_at_1"])
+        self.assertIn("0.621", manifest["metric_policy"]["s5_macro_f1"])
+        for kind in ("sources", "outputs"):
+            for artifact in manifest[kind]:
+                path = ROOT / artifact["path"]
+                with self.subTest(kind=kind, path=path):
+                    self.assertTrue(path.is_file())
+                    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                    self.assertEqual(digest, artifact["sha256"])
+
+    def test_recruiter_contact_and_demo_entry_points(self):
+        readme = (ROOT / "README.md").read_text()
+        self.assertIn(
+            "https://www.linkedin.com/in/hariharan-chandrasekaran-/",
+            readme,
+        )
+        self.assertIn("mailto:hariharan.chandrasekaran25@gmail.com", readme)
+        self.assertIn("sts demo", readme)
+        self.assertIn("sts demo-synthetic", readme)
+
     def test_relative_markdown_links_exist(self):
         for path in sorted(ROOT.rglob("*.md")):
             for target in MARKDOWN_LINK.findall(path.read_text()):

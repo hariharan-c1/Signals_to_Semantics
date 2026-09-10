@@ -201,7 +201,7 @@ def join_missing_count(conn, left_table: str, right_table: str, join_keys: List[
 def backend_coverage(conn, split_name: str) -> List[Dict[str, Any]]:
     if not table_exists(conn, "llm_predictions") or not table_exists(conn, "llm_backends"):
         return []
-    # Don’t assume columns beyond the ones we know exist in your schema.
+    # Do not assume columns beyond those in the released schema.
     bcols = set(get_columns(conn, "llm_backends"))
     pcols = set(get_columns(conn, "llm_predictions"))
     needed_b = {"backend_id", "prompt_type", "backend_dir"}

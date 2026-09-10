@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = {file = "LICENSE"}
 authors = [
-  {name = "Hariharan Chandrasekaran"}
+  {name = "Hariharan Chandrasekaran", email = "hariharan.chandrasekaran25@gmail.com"}
 ]
 keywords = [
   "autonomous-driving",
@@ -87,6 +87,15 @@ full = [
   "umap-learn>=0.5,<1",
   "xgboost>=2,<4",
 ]
+
+[project.scripts]
+sts = "signals_to_semantics.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/hariharan-c1/Signals_to_Semantics"
+Repository = "https://github.com/hariharan-c1/Signals_to_Semantics"
+Issues = "https://github.com/hariharan-c1/Signals_to_Semantics/issues"
+LinkedIn = "https://www.linkedin.com/in/hariharan-chandrasekaran-/"
 
 [tool.setuptools.packages.find]
 include = ["signals_to_semantics*"]

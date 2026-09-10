@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "generation_script": "scripts/maintenance/generate_readme_figures.py",
+  "metric_policy": {
+    "s3_hit_at_1": "23/26 = 0.884615; count-derived value approved for public reporting",
+    "s5_macro_f1": "0.621; final selected Base Prompt + gpt-5-chat value"
+  },
+  "thesis_lineage": {
+    "architecture_overview": "Redesigned from the system organization in thesis Figure 4.1.",
+    "evaluation_funnel": "Redesigned from thesis Figure 6.1.",
+    "results_dashboard": "Regenerated from the data underlying thesis Figure 6.6, Figure 6.11, and Table 6.11.",
+    "social_preview": "Repository social card assembled from the verified final metric ledger."
+  },
+  "sources": [
+    {
+      "path": "results/verified/final_defense_metrics.json",
+      "sha256": "2780820246e1e1c1c8d86627a5189a8cdcbd2144f0f9e605f2822e1484dad9cd"
+    },
+    {
+      "path": "results/verified/s5_prompt_ablation_val50.csv",
+      "sha256": "a30e560170713c3933c60e2e0806d691bd5b0429a34913c27410b6080cd7f650"
+    },
+    {
+      "path": "results/verified/s7_strict_gt_top10_val50.csv",
+      "sha256": "01c6108202696b58189c68dae732b96cb68058a923082319399334b3a5c7a053"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "assets/architecture_overview.png",
+      "sha256": "222dc5918a61e03c6782a8f260da503b3f7162df542c0f9c7e146b62d898e700"
+    },
+    {
+      "path": "assets/architecture_overview.svg",
+      "sha256": "f6fe277d74e27ee2b0b0a7e1dd1ea2ac85e696f381fb75ffa16821dc79e75cde"
+    },
+    {
+      "path": "assets/evaluation_funnel.png",
+      "sha256": "43167866ccd7b4ea78a279c8aa30bf4929cde354db81113d70444c0f23f99f48"
+    },
+    {
+      "path": "assets/evaluation_funnel.svg",
+      "sha256": "779a52d33b8a57e6353fde2005242b643b6f24514acd19ec1c8b2b560592800b"
+    },
+    {
+      "path": "assets/results_dashboard.png",
+      "sha256": "1883a26c13613615acf60498e73ab4e48a87c9e4031b51a004e597ae9d614d7c"
+    },
+    {
+      "path": "assets/results_dashboard.svg",
+      "sha256": "7465174d351352bec164f910d34b5e5a599059c9ed5d6d241a629e02da6bea76"
+    },
+    {
+      "path": "assets/social_preview.png",
+      "sha256": "2fc4633f28e1438498495d7764a67f1bfa6aaa3fb34898a66650c412d74f0fae"
+    }
+  ]
+}

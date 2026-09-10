@@ -564,7 +564,7 @@ def discover_backend_ids_for_scope(conn, cfg: S7BConfig) -> Optional[List[int]]:
 
 def insert_run(conn, cfg: S7BConfig, query_meta: Dict[str, Any], filters: Dict[str, Any]) -> int:
     """
-    Insert into s7_retrieval_runs (matches your actual table schema).
+    Insert into s7_retrieval_runs using the released table schema.
     """
     backend_ids = discover_backend_ids_for_scope(conn, cfg)
 
