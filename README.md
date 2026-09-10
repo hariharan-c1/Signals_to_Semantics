@@ -230,8 +230,10 @@ all retained S0–S7 pipeline code was developed for this thesis. See
 
 **Hariharan Chandrasekaran**
 
-Master's thesis researcher · autonomous-driving scenario mining · machine
-learning systems
+**Automotive Software Engineer | AI & Machine Learning**
+
+M.Sc. Automotive Software Engineering. Open to full-time opportunities in
+ADAS/AD validation, autonomous-driving AI, and automotive software.
 
 [LinkedIn](https://www.linkedin.com/in/hariharan-chandrasekaran-/) ·
 [Email](mailto:hariharan.chandrasekaran25@gmail.com) ·
