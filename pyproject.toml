@@ -51,7 +51,7 @@ ml = [
   "xgboost>=2,<4",
 ]
 llm = [
-  "openai>=1.50,<3",
+  "openai>=1.50,<4",
   "requests>=2.31,<3",
   "tqdm>=4.66,<5",
 ]
@@ -71,7 +71,7 @@ dev = [
 full = [
   "av2==0.3.5",
   "matplotlib>=3.8,<4",
-  "openai>=1.50,<3",
+  "openai>=1.50,<4",
   "pandas>=2.1,<3",
   "psycopg2-binary>=2.9,<3",
   "pyarrow>=14,<21",
