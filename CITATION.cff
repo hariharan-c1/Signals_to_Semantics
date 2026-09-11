@@ -1,14 +1,14 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the thesis and this repository."
 title: "Signals to Semantics"
-abstract: "An LLM-driven learning pipeline for novel driving-scenario discovery."
+abstract: "Traceable ADAS/AD scenario mining from vehicle signals to semantic retrieval."
 type: software
 authors:
   - family-names: Chandrasekaran
     given-names: Hariharan
     email: hariharan.chandrasekaran25@gmail.com
-version: 0.1.0
-date-released: 2026-09-08
+version: 1.0.0
+date-released: 2026-09-11
 license: MIT
 repository-code: "https://github.com/hariharan-c1/Signals_to_Semantics"
 url: "https://github.com/hariharan-c1/Signals_to_Semantics"

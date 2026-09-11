@@ -1,11 +1,16 @@
 # Signals to Semantics
 
 [![CI](https://github.com/hariharan-c1/Signals_to_Semantics/actions/workflows/ci.yml/badge.svg)](https://github.com/hariharan-c1/Signals_to_Semantics/actions/workflows/ci.yml)
+[![Research artifact: v1.0.0](https://img.shields.io/badge/research%20artifact-v1.0.0-0969DA.svg)](CHANGELOG.md)
 [![Python 3.10–3.12](https://img.shields.io/badge/python-3.10%E2%80%933.12-3776AB.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/code%20license-MIT-2EA44F.svg)](LICENSE)
 [![Dataset: Argoverse 2](https://img.shields.io/badge/dataset-Argoverse%202-6F42C1.svg)](https://www.argoverse.org/av2.html)
 
 **A traceable learning pipeline for mining, explaining, and retrieving safety-relevant driving scenarios.**
+
+**Status:** Version 1.0.0 is the stable public thesis artifact for offline
+validation, technical review, and portfolio demonstration. It is not a
+production driving or safety system.
 
 This repository is the public research artifact for the Master's thesis
 *From Signals to Semantics: An LLM-Driven Learning Pipeline for Novel

@@ -62,6 +62,7 @@ NAMED_SECRET = re.compile(
     r"[\"']?\s*[:=]\s*(.*?)\s*,?\s*$"
 )
 EXPECTED_FILES = {
+    "CHANGELOG.md",
     "README.md",
     "LICENSE",
     "NOTICE.md",

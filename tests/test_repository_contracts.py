@@ -43,6 +43,30 @@ def _read_ids(name):
 
 
 class RepositoryContractTests(unittest.TestCase):
+    def test_release_version_is_consistent(self):
+        expected = "1.0.0"
+        pyproject = (ROOT / "pyproject.toml").read_text()
+        package_init = (ROOT / "signals_to_semantics" / "__init__.py").read_text()
+        citation = yaml.safe_load((ROOT / "CITATION.cff").read_text())
+
+        project_version = re.search(
+            r'^version\s*=\s*"([^"]+)"$',
+            pyproject,
+            re.MULTILINE,
+        )
+        package_version = re.search(
+            r'^__version__\s*=\s*"([^"]+)"$',
+            package_init,
+            re.MULTILINE,
+        )
+
+        self.assertIsNotNone(project_version)
+        self.assertIsNotNone(package_version)
+        self.assertEqual(project_version.group(1), expected)
+        self.assertEqual(package_version.group(1), expected)
+        self.assertEqual(str(citation["version"]), expected)
+        self.assertIn(f"## [{expected}]", (ROOT / "CHANGELOG.md").read_text())
+
     def test_split_counts_and_relationships(self):
         dev100 = _read_ids("dev100.txt")
         train550 = _read_ids("train550.txt")

@@ -1,14 +1,15 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "signals-to-semantics"
-version = "0.1.0"
-description = "An LLM-driven learning pipeline for novel driving-scenario discovery"
+version = "1.0.0"
+description = "Traceable ADAS/AD scenario mining from vehicle signals to semantic retrieval"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
-license = {file = "LICENSE"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
   {name = "Hariharan Chandrasekaran", email = "hariharan.chandrasekaran25@gmail.com"}
 ]
@@ -20,9 +21,8 @@ keywords = [
   "large-language-models",
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
