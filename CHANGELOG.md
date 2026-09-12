@@ -5,7 +5,7 @@ project follows [Semantic Versioning](https://semver.org/) for its packaged
 interfaces; research claims remain governed by the evaluation contracts and
 provenance records in `docs/`.
 
-## [1.0.0] - 2026-09-11
+## [1.0.0] - 2026-09-12
 
 First stable public thesis artifact.
 
@@ -16,7 +16,7 @@ First stable public thesis artifact.
 - Verified final thesis metrics with machine-readable provenance.
 - One real held-out trace covering event localization, actor ranking,
   evidence construction, semantic reasoning, human review, and retrieval.
-- Deterministic offline demos and a 22-test publication gate across Python
+- Deterministic offline demos and a 23-test publication gate across Python
   3.10 and 3.12.
 - Recruiter-focused architecture, results, methodology, reproducibility, and
   limitation documentation.
